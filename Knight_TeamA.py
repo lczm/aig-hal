@@ -235,8 +235,13 @@ class KnightStateFleeing_TeamA(State):
 
     def check_conditions(self):
         
-        if self.knight.current_hp >= self.knight.max_hp:
-            return "seeking"
+        nearest_ally = self.knight.get_nearest_ranged_ally()
+        if nearest_ally is not None:
+            ally_distance = (self.knight.position - nearest_ally.position).length()
+            if (self.knight.current_hp >= self.knight.max_hp) or \ 
+            (self.knight.current_hp >= self.knight.max_hp * 0.8 and \ 
+            ally_distance <= self.knight.min_target_distance):
+                return "seeking"
 
         nearest_opponent = self.knight.world.get_nearest_opponent(self.knight)
         if nearest_opponent is not None:
@@ -267,4 +272,4 @@ class KnightStateFleeing_TeamA(State):
             self.knight.move_target.position = self.path[0].fromNode.position
 
         else:
-            self.knight.move_target.position = self.knight.path_graph.nodes[self.knight.base.target_node_index].position
+            self.knight.move_target.position = self.knight.path_graph.nodes[self.knight.base.spawn_node_index].position
