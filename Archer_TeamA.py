@@ -35,11 +35,14 @@ class Archer_TeamA(Character):
 
         self.brain.set_state("seeking")
 
+        self.time_passed:float = 0
+
     def render(self, surface):
         Character.render(self, surface)
 
-    def process(self, time_passed):
+    def process(self, time_passed) -> None:
         Character.process(self, time_passed)
+        self.time_passed = time_passed
 
         level_up_stats: typing.List[str] = [
             "hp",
@@ -63,8 +66,7 @@ class ArcherStateSeeking_TeamA(State):
             randint(0, len(self.archer.world.paths) - 1)
         ]
 
-    def do_actions(self):
-
+    def do_actions(self) -> None:
         self.archer.velocity = self.archer.move_target.position - self.archer.position
         if self.archer.velocity.length() > 0:
             self.archer.velocity.normalize_ip()
@@ -91,7 +93,7 @@ class ArcherStateSeeking_TeamA(State):
 
         return None
 
-    def entry_actions(self):
+    def entry_actions(self) -> None:
         nearest_node = self.archer.path_graph.get_nearest_node(self.archer.position)
         self.path = pathFindAStar(
             self.archer.path_graph,
@@ -119,13 +121,31 @@ class ArcherStateAttacking_TeamA(State):
             self.archer.position - self.archer.target.position
         ).length()
 
-        # opponent within range
-        if opponent_distance <= self.archer.min_target_distance:
-            self.archer.velocity = Vector2(0, 0)
-            if self.archer.current_ranged_cooldown <= 0:
+        # if can attack
+        if self.archer.current_ranged_cooldown <= 0:
+            if opponent_distance <= self.archer.min_target_distance:
+                self.archer.velocity = Vector2(0, 0)
                 self.archer.ranged_attack(self.archer.target.position)
+            else:
+                self.archer.velocity = (
+                    self.archer.target.position - self.archer.position
+                )
+        # cannot attack
         else:
-            self.archer.velocity = self.archer.target.position - self.archer.position
+            # if the current distance is more than what an archer can usually
+            # hit from, with some padding
+            if (
+                opponent_distance
+                > self.archer.min_target_distance + (self.archer.time_passed * self.archer.maxSpeed)
+            ):
+                self.archer.velocity = (
+                    self.archer.target.position - self.archer.position
+                )
+            else:
+                self.archer.velocity = (
+                    -self.archer.target.position - self.archer.position
+                )
+
             if self.archer.velocity.length() > 0:
                 self.archer.velocity.normalize_ip()
                 self.archer.velocity *= self.archer.maxSpeed
