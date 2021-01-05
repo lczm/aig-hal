@@ -1,7 +1,7 @@
-import typing
 import pygame
 
 from random import randint, random
+from typing import List
 from Graph import *
 from Base import *
 
@@ -25,6 +25,18 @@ class Archer_TeamA(Character):
         self.projectile_range: int = 100
         self.projectile_speed: int = 100
 
+        self.time_passed: float = 0
+
+        self.path_graph: List[Node] = self.world.paths[
+            randint(0, len(self.world.paths) - 1)
+        ]
+        self.path: List[NodeRecord] = pathFindAStar(
+            self.path_graph,
+            self.path_graph.get_nearest_node(self.position),
+            self.path_graph.nodes[self.base.target_node_index],
+        )
+        self.path_length: int = len(self.path)
+
         seeking_state: ArcherStateAttacking_TeamA = ArcherStateSeeking_TeamA(self)
         attacking_state: ArcherStateAttacking_TeamA = ArcherStateAttacking_TeamA(self)
         ko_state: ArcherStateKO_TeamA = ArcherStateKO_TeamA(self)
@@ -34,8 +46,6 @@ class Archer_TeamA(Character):
         self.brain.add_state(ko_state)
 
         self.brain.set_state("seeking")
-
-        self.time_passed: float = 0
 
     def render(self, surface):
         Character.render(self, surface)
@@ -62,9 +72,9 @@ class ArcherStateSeeking_TeamA(State):
         State.__init__(self, "seeking")
         self.archer: Archer_TeamA = archer
 
-        self.archer.path_graph = self.archer.world.paths[
-            randint(0, len(self.archer.world.paths) - 1)
-        ]
+        # self.archer.path_graph: List[Node] = self.archer.world.paths[
+        #     randint(0, len(self.archer.world.paths) - 1)
+        # ]
 
     def do_actions(self) -> None:
         self.archer.velocity = self.archer.move_target.position - self.archer.position
@@ -85,8 +95,8 @@ class ArcherStateSeeking_TeamA(State):
 
         if (self.archer.position - self.archer.move_target.position).length() < 8:
             # continue on path
-            if self.current_connection < self.path_length:
-                self.archer.move_target.position = self.path[
+            if self.current_connection < self.archer.path_length:
+                self.archer.move_target.position = self.archer.path[
                     self.current_connection
                 ].toNode.position
                 self.current_connection += 1
@@ -94,17 +104,26 @@ class ArcherStateSeeking_TeamA(State):
         return None
 
     def entry_actions(self) -> None:
-        nearest_node = self.archer.path_graph.get_nearest_node(self.archer.position)
-        self.path = pathFindAStar(
+        # nearest_node = self.archer.path_graph.get_nearest_node(self.archer.position)
+        # self.archer.path = pathFindAStar(
+        #     self.archer.path_graph,
+        #     nearest_node,
+        #     self.archer.path_graph.nodes[self.archer.base.target_node_index],
+        # )
+
+        # TODO : Utility method for setting path_graph?
+        self.archer.path = pathFindAStar(
             self.archer.path_graph,
-            nearest_node,
+            self.archer.path_graph.get_nearest_node(self.archer.position),
             self.archer.path_graph.nodes[self.archer.base.target_node_index],
         )
 
-        self.path_length = len(self.path)
-        if self.path_length > 0:
+        self.archer.path_length: int = len(self.archer.path)
+        # self.path_length = len(self.path)
+
+        if self.archer.path_length > 0:
             self.current_connection = 0
-            self.archer.move_target.position = self.path[0].fromNode.position
+            self.archer.move_target.position = self.archer.path[0].fromNode.position
         else:
             self.archer.move_target.position = self.archer.path_graph.nodes[
                 self.archer.base.target_node_index
