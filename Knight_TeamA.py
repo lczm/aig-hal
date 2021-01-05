@@ -238,9 +238,9 @@ class KnightStateFleeing_TeamA(State):
         nearest_ally = self.knight.get_nearest_ranged_ally()
         if nearest_ally is not None:
             ally_distance = (self.knight.position - nearest_ally.position).length()
-            if (self.knight.current_hp >= self.knight.max_hp) or \ 
-            (self.knight.current_hp >= self.knight.max_hp * 0.8 and \ 
-            ally_distance <= self.knight.min_target_distance):
+            if (self.knight.current_hp >= self.knight.max_hp) \
+            or (self.knight.current_hp >= self.knight.max_hp * 0.8 \
+            and ally_distance <= self.knight.min_target_distance):
                 return "seeking"
 
         nearest_opponent = self.knight.world.get_nearest_opponent(self.knight)
