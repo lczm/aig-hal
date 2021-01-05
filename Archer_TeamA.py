@@ -35,7 +35,7 @@ class Archer_TeamA(Character):
 
         self.brain.set_state("seeking")
 
-        self.time_passed:float = 0
+        self.time_passed: float = 0
 
     def render(self, surface):
         Character.render(self, surface)
@@ -117,6 +117,9 @@ class ArcherStateAttacking_TeamA(State):
         self.archer: Archer_TeamA = archer
 
     def do_actions(self):
+        # TODO : Change target to the target that is closest to the archer
+        # TODO : once changed, check surrounding radius by a certain amoutn
+        # If enemy hp is (one-hit) status, change target to that
         opponent_distance = (
             self.archer.position - self.archer.target.position
         ).length()
@@ -134,16 +137,20 @@ class ArcherStateAttacking_TeamA(State):
         else:
             # if the current distance is more than what an archer can usually
             # hit from, with some padding
-            if (
-                opponent_distance
-                > self.archer.min_target_distance + (self.archer.time_passed * self.archer.maxSpeed)
+            # TODO : Store pathfinding graph in self.archer and use that to find
+            # nearest node and kite back and forth
+            # TODO (2) : (If the above is not implemented), can check that
+            # the archer has stayed in the same spot for a frame, and generate a random
+            # direction vector to move towards
+            if opponent_distance > self.archer.min_target_distance + (
+                self.archer.time_passed * self.archer.maxSpeed
             ):
                 self.archer.velocity = (
                     self.archer.target.position - self.archer.position
                 )
             else:
-                self.archer.velocity = (
-                    -self.archer.target.position - self.archer.position
+                self.archer.velocity = -(
+                    self.archer.target.position - self.archer.position
                 )
 
             if self.archer.velocity.length() > 0:
