@@ -8,6 +8,14 @@ from Base import *
 from Character import *
 from State import *
 
+"""
+    TODO : Strategy for levelling up stats
+    TODO : Fleeing state
+    TODO : Fleeing(?), strategy for dealing with health
+
+    TODO : The rest of the TODOs
+"""
+
 
 class Archer_TeamA(Character):
     def __init__(self, world, image, projectile_image, base, position):
@@ -72,6 +80,8 @@ class ArcherStateSeeking_TeamA(State):
         State.__init__(self, "seeking")
         self.archer: Archer_TeamA = archer
 
+        self.current_connection: int = 0
+
         # self.archer.path_graph: List[Node] = self.archer.world.paths[
         #     randint(0, len(self.archer.world.paths) - 1)
         # ]
@@ -111,14 +121,15 @@ class ArcherStateSeeking_TeamA(State):
         #     self.archer.path_graph.nodes[self.archer.base.target_node_index],
         # )
 
+        # No need to set the graph two times (__init__ from Archer)
         # TODO : Utility method for setting path_graph?
-        self.archer.path = pathFindAStar(
-            self.archer.path_graph,
-            self.archer.path_graph.get_nearest_node(self.archer.position),
-            self.archer.path_graph.nodes[self.archer.base.target_node_index],
-        )
+        # self.archer.path = pathFindAStar(
+        #     self.archer.path_graph,
+        #     self.archer.path_graph.get_nearest_node(self.archer.position),
+        #     self.archer.path_graph.nodes[self.archer.base.target_node_index],
+        # )
 
-        self.archer.path_length: int = len(self.archer.path)
+        # self.archer.path_length: int = len(self.archer.path)
         # self.path_length = len(self.path)
 
         if self.archer.path_length > 0:
@@ -134,6 +145,8 @@ class ArcherStateAttacking_TeamA(State):
     def __init__(self, archer):
         State.__init__(self, "attacking")
         self.archer: Archer_TeamA = archer
+
+        self.current_connection: int = 0
 
     def do_actions(self):
         # TODO : Change target to the target that is closest to the archer
@@ -156,21 +169,22 @@ class ArcherStateAttacking_TeamA(State):
         else:
             # if the current distance is more than what an archer can usually
             # hit from, with some padding
-            # TODO : Store pathfinding graph in self.archer and use that to find
-            # nearest node and kite back and forth
-            # TODO (2) : (If the above is not implemented), can check that
-            # the archer has stayed in the same spot for a frame, and generate a random
-            # direction vector to move towards
             if opponent_distance > self.archer.min_target_distance + (
                 self.archer.time_passed * self.archer.maxSpeed
             ):
-                self.archer.velocity = (
-                    self.archer.target.position - self.archer.position
-                )
+                # self.current_connection - 1 if self.current_connection != 0
+                if self.current_connection != 0:
+                    self.current_connection -= 1
+                # self.archer.velocity = (
+                #     self.archer.target.position - self.archer.position
+                # )
             else:
-                self.archer.velocity = -(
-                    self.archer.target.position - self.archer.position
-                )
+                # self.archer.velocity = -(
+                #     self.archer.target.position - self.archer.position
+                # )
+                self.current_connection += 1
+
+            self.archer.velocity = self.archer.move_target.position - self.archer.position
 
             if self.archer.velocity.length() > 0:
                 self.archer.velocity.normalize_ip()
@@ -187,7 +201,9 @@ class ArcherStateAttacking_TeamA(State):
 
         return None
 
-    def entry_actions(self):
+    def entry_actions(self) -> None:
+        self.archer.move_target.position = self.archer.path[0].fromNode.position
+
         return None
 
 
