@@ -34,6 +34,7 @@ class Archer_TeamA(Character):
         self.projectile_speed: int = 100
 
         self.time_passed: float = 0
+        self.current_connection: int = 0
 
         self.path_graph: List[Node] = self.world.paths[
             randint(0, len(self.world.paths) - 1)
@@ -80,8 +81,6 @@ class ArcherStateSeeking_TeamA(State):
         State.__init__(self, "seeking")
         self.archer: Archer_TeamA = archer
 
-        self.current_connection: int = 0
-
         # self.archer.path_graph: List[Node] = self.archer.world.paths[
         #     randint(0, len(self.archer.world.paths) - 1)
         # ]
@@ -105,11 +104,12 @@ class ArcherStateSeeking_TeamA(State):
 
         if (self.archer.position - self.archer.move_target.position).length() < 8:
             # continue on path
-            if self.current_connection < self.archer.path_length:
+            if self.archer.current_connection < self.archer.path_length:
                 self.archer.move_target.position = self.archer.path[
-                    self.current_connection
+                    self.archer.current_connection
                 ].toNode.position
-                self.current_connection += 1
+                self.archer.current_connection += 1
+                print("seeking: +1 current_connection")
 
         return None
 
@@ -133,8 +133,9 @@ class ArcherStateSeeking_TeamA(State):
         # self.path_length = len(self.path)
 
         if self.archer.path_length > 0:
-            self.current_connection = 0
-            self.archer.move_target.position = self.archer.path[0].fromNode.position
+            # self.archer.current_connection = 0
+            # self.archer.move_target.position = self.archer.path[0].fromNode.position
+            self.archer.move_target.position = self.archer.path[self.archer.current_connection].fromNode.position
         else:
             self.archer.move_target.position = self.archer.path_graph.nodes[
                 self.archer.base.target_node_index
@@ -145,8 +146,6 @@ class ArcherStateAttacking_TeamA(State):
     def __init__(self, archer):
         State.__init__(self, "attacking")
         self.archer: Archer_TeamA = archer
-
-        self.current_connection: int = 0
 
     def do_actions(self):
         # TODO : Change target to the target that is closest to the archer
@@ -161,34 +160,41 @@ class ArcherStateAttacking_TeamA(State):
             if opponent_distance <= self.archer.min_target_distance:
                 self.archer.velocity = Vector2(0, 0)
                 self.archer.ranged_attack(self.archer.target.position)
+
+                if self.archer.current_connection < self.archer.path_length:
+                    if (self.archer.position - self.archer.move_target.position).length() > 8:
+                        self.archer.current_connection -= 1
+                        self.archer.move_target.position = self.archer.path[
+                            self.archer.current_connection
+                        ].fromNode.position
+                        self.archer.velocity = self.archer.move_target.position - self.archer.position
             else:
-                self.archer.velocity = (
-                    self.archer.target.position - self.archer.position
-                )
+                # if can attack and not within range of the opponent, move towards
+                # the opponent via the grid
+                self.archer.velocity = self.archer.move_target.position - self.archer.position
+
+                if self.archer.current_connection > 0:
+                    if (self.archer.position - self.archer.move_target.position).length() < 8:
+                        self.archer.current_connection += 1
+                        self.archer.move_target.position = self.archer.path[
+                            self.archer.current_connection
+                        ].fromNode.position
+                        self.archer.velocity = self.archer.move_target.position - self.archer.position
         # cannot attack
         else:
-            # if the current distance is more than what an archer can usually
-            # hit from, with some padding
-            if opponent_distance > self.archer.min_target_distance + (
-                self.archer.time_passed * self.archer.maxSpeed
-            ):
-                # self.current_connection - 1 if self.current_connection != 0
-                if self.current_connection != 0:
-                    self.current_connection -= 1
-                # self.archer.velocity = (
-                #     self.archer.target.position - self.archer.position
-                # )
-            else:
-                # self.archer.velocity = -(
-                #     self.archer.target.position - self.archer.position
-                # )
-                self.current_connection += 1
+            if self.archer.current_connection < self.archer.path_length:
+                if (self.archer.position - self.archer.move_target.position).length() < 8:
+                    self.archer.current_connection -= 1
+                    self.archer.move_target.position = self.archer.path[
+                        self.archer.current_connection
+                    ].fromNode.position
+                    self.archer.velocity = self.archer.move_target.position - self.archer.position
 
-            self.archer.velocity = self.archer.move_target.position - self.archer.position
+        print("Archer move_target.position : ", self.archer.move_target.position)
 
-            if self.archer.velocity.length() > 0:
-                self.archer.velocity.normalize_ip()
-                self.archer.velocity *= self.archer.maxSpeed
+        if self.archer.velocity.length() > 0:
+            self.archer.velocity.normalize_ip()
+            self.archer.velocity *= self.archer.maxSpeed
 
     def check_conditions(self) -> str:
         # target is gone
@@ -197,13 +203,17 @@ class ArcherStateAttacking_TeamA(State):
             or self.archer.target.ko
         ):
             self.archer.target = None
+
+            # self.archer.current_connection += 1
+            # self.archer.move_target.position = self.archer.path[
+            #     self.archer.current_connection
+            # ].toNode.position
             return "seeking"
 
         return None
 
     def entry_actions(self) -> None:
-        self.archer.move_target.position = self.archer.path[0].fromNode.position
-
+        # self.archer.move_target.position = self.archer.path[0].fromNode.position
         return None
 
 
