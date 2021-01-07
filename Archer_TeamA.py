@@ -161,7 +161,7 @@ class ArcherStateAttacking_TeamA(State):
                 self.archer.velocity = Vector2(0, 0)
                 self.archer.ranged_attack(self.archer.target.position)
 
-                if self.archer.current_connection < self.archer.path_length:
+                if self.archer.current_connection > 0:
                     if (self.archer.position - self.archer.move_target.position).length() > 8:
                         self.archer.current_connection -= 1
                         self.archer.move_target.position = self.archer.path[
@@ -182,7 +182,7 @@ class ArcherStateAttacking_TeamA(State):
                         self.archer.velocity = self.archer.move_target.position - self.archer.position
         # cannot attack
         else:
-            if self.archer.current_connection < self.archer.path_length:
+            if self.archer.current_connection > 0:
                 if (self.archer.position - self.archer.move_target.position).length() < 8:
                     self.archer.current_connection -= 1
                     self.archer.move_target.position = self.archer.path[
