@@ -283,12 +283,27 @@ class ArcherStateFleeing_TeamA(State):
         self.archer: Archer_TeamA = archer
     
     def do_actions(self) -> None:
+        # Run back
+        if self.archer.current_connection > 0 and (self.archer.position - self.archer.move_target.position).length() < 8:
+            self.archer.current_connection -= 1
+
+        self.archer.move_target.position = self.archer.path[
+            self.archer.current_connection
+        ].fromNode.position
+
+        self.archer.velocity = self.archer.move_target.position - self.archer.position
+        if self.archer.velocity.length() > 0:
+            self.archer.velocity.normalize_ip()
+            self.archer.velocity *= self.archer.maxSpeed
+
+        # Heal, it will check if it can heal
         self.archer.heal()
         return None
 
     def check_conditions(self) -> str:
-        if self.archer.healing_cooldown > 0:
+        if self.archer.current_hp > (self.archer.max_hp / 100 * 70):
             return "seeking"
+
         return None
 
     def entry_actions(self):
