@@ -71,7 +71,7 @@ class Knight_TeamA(Character):
 
         level_up_stats = ["hp", "speed", "melee damage", "melee cooldown"]
         if self.can_level_up():
-            choice = randint(0, len(level_up_stats) - 1)
+            choice = 0 #always hp
             self.level_up(level_up_stats[choice])
 
    
