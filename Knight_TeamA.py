@@ -16,6 +16,7 @@ class Knight_TeamA(Character):
         self.position = position
         self.move_target = GameEntity(world, "knight_move_target", None)
         self.target = None
+        self.enemy_decoy = None
         self.world = world
 
         self.maxSpeed = 80
@@ -97,9 +98,13 @@ class KnightStateSeeking_TeamA(State):
 
     def check_conditions(self):
 
+        # if stuck, unstuck yourself
+        if self.knight.velocity == 0:
+            return "fleeing"
+
         # check if opponent is in range
         nearest_opponent = self.knight.world.get_nearest_opponent(self.knight)
-        if nearest_opponent is not None:
+        if nearest_opponent is not None and nearest_opponent != self.knight.enemy_decoy:
             opponent_distance = (self.knight.position - nearest_opponent.position).length()
             if opponent_distance <= self.knight.min_target_distance:
                     self.knight.target = nearest_opponent
@@ -116,8 +121,11 @@ class KnightStateSeeking_TeamA(State):
 
 
     def entry_actions(self):
-        #plans to include further nodes but within the same path function
         nearest_node = self.knight.path_graph.get_nearest_node(self.knight.position)
+        if (self.knight.position[0] - nearest_node.position[0] > 0 or \
+            self.knight.position[1] - nearest_node.position[1] > 0):
+            further_node_index = list(self.knight.path_graph.nodes.values()).index(nearest_node)
+            nearest_node = list(self.knight.path_graph.nodes.values())[further_node_index + 1]
 
         self.path = pathFindAStar(self.knight.path_graph, \
                                   nearest_node, \
@@ -159,16 +167,21 @@ class KnightStateAttacking_TeamA(State):
 
 
     def check_conditions(self):
-
         # target is gone
         if self.knight.world.get(self.knight.target.id) is None or self.knight.target.ko:
             self.knight.target = None
-            if self.knight.current_hp >= self.knight.max_hp * 0.8:
+            self.knight.enemy_decoy = None
+            if self.knight.current_hp >= self.knight.max_hp * 0.75:
                 # if HP >= 80%, continue seeking
                 return "seeking"
             else:
-                #change to fleeing state when hp dips below 80%, and use heal
+                #change to fleeing state when hp dips below 75% for testing purposes, 40% for actual game
                 return "fleeing"
+        # target is chasing another character (for bait/decoy situations), switch target
+        elif self.knight.target.brain.active_state == "attacking" and self.knight.target.target != self.knight:
+            self.knight.enemy_decoy = self.knight.target
+            return "seeking"
+            
         
         #while attacking, taking some dmg and no ally is around, flee
         if self.knight.current_hp <= self.knight.max_hp * .66:
@@ -260,6 +273,10 @@ class KnightStateFleeing_TeamA(State):
 
     def entry_actions(self):
         nearest_node = self.knight.path_graph.get_nearest_node(self.knight.position)
+        if (self.knight.position[0] - nearest_node.position[0] < 0 or \
+            self.knight.position[1] - nearest_node.position[1] < 0):
+            further_node_index = list(self.knight.path_graph.nodes.values()).index(nearest_node)
+            nearest_node = list(self.knight.path_graph.nodes.values())[further_node_index - 1]
 
         self.path = pathFindAStar(self.knight.path_graph, \
                                   nearest_node, \
