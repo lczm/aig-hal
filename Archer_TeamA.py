@@ -105,7 +105,7 @@ class ArcherStateSeeking_TeamA(State):
 
         if (self.archer.position - self.archer.move_target.position).length() < 8:
             # continue on path
-            if self.archer.current_connection < self.archer.path_length:
+            if self.archer.current_connection < self.archer.path_length - 1:
                 self.archer.current_connection += 1
                 self.archer.move_target.position = self.archer.path[
                     self.archer.current_connection
@@ -181,7 +181,7 @@ class ArcherStateAttacking_TeamA(State):
             else:
                 # if can attack and not within range of the opponent, move towards
                 # the opponent via the grid
-                if self.archer.current_connection < self.archer.path_length and (self.archer.position - self.archer.move_target.position).length() < 8:
+                if self.archer.current_connection < self.archer.path_length - 1 and (self.archer.position - self.archer.move_target.position).length() < 8:
                     self.archer.current_connection += 1
                     print("### trying to range attack, current_connection + 1")
 
@@ -214,6 +214,7 @@ class ArcherStateAttacking_TeamA(State):
                 print("@@@ cannot attack, running from the range of the opponent")
                 print(f"fromNode: {self.archer.path[self.archer.current_connection].fromNode.position}")
                 print(f"toNode: {self.archer.path[self.archer.current_connection].toNode.position}")
+                print(f"current_connection: {self.archer.current_connection}")
             else:
                 if self.archer.current_connection > 0 and (self.archer.position - self.archer.move_target.position).length() < 8:
                     self.archer.current_connection -= 1
@@ -245,6 +246,12 @@ class ArcherStateAttacking_TeamA(State):
             # self.archer.move_target.position = self.archer.path[
             #     self.archer.current_connection
             # ].toNode.position
+            return "seeking"
+        
+        opponent_distance = (
+            self.archer.position - self.archer.target.position
+        ).length()
+        if opponent_distance > 250:
             return "seeking"
 
         return None
