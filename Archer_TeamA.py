@@ -106,10 +106,10 @@ class ArcherStateSeeking_TeamA(State):
         if (self.archer.position - self.archer.move_target.position).length() < 8:
             # continue on path
             if self.archer.current_connection < self.archer.path_length:
+                self.archer.current_connection += 1
                 self.archer.move_target.position = self.archer.path[
                     self.archer.current_connection
                 ].toNode.position
-                self.archer.current_connection += 1
                 print("seeking: +1 current_connection")
 
         return None
@@ -136,7 +136,7 @@ class ArcherStateSeeking_TeamA(State):
         if self.archer.path_length > 0:
             # self.archer.current_connection = 0
             # self.archer.move_target.position = self.archer.path[0].fromNode.position
-            self.archer.move_target.position = self.archer.path[self.archer.current_connection].fromNode.position
+            self.archer.move_target.position = self.archer.path[self.archer.current_connection].toNode.position
         else:
             self.archer.move_target.position = self.archer.path_graph.nodes[
                 self.archer.base.target_node_index
@@ -181,13 +181,13 @@ class ArcherStateAttacking_TeamA(State):
             else:
                 # if can attack and not within range of the opponent, move towards
                 # the opponent via the grid
-                if self.archer.current_connection != self.archer.path_length - 1 and (self.archer.position - self.archer.move_target.position).length() < 8:
+                if self.archer.current_connection < self.archer.path_length and (self.archer.position - self.archer.move_target.position).length() < 8:
                     self.archer.current_connection += 1
                     print("### trying to range attack, current_connection + 1")
 
                 self.archer.move_target.position = self.archer.path[
                     self.archer.current_connection
-                ].fromNode.position
+                ].toNode.position
                 self.archer.velocity = self.archer.move_target.position - self.archer.position
                 print("@@@ trying to range attack")
         # cannot attack
