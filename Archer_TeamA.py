@@ -49,10 +49,12 @@ class Archer_TeamA(Character):
 
         seeking_state: ArcherStateAttacking_TeamA = ArcherStateSeeking_TeamA(self)
         attacking_state: ArcherStateAttacking_TeamA = ArcherStateAttacking_TeamA(self)
+        fleeing_state: ArcherStateFleeing_TeamA = ArcherStateFleeing_TeamA(self)
         ko_state: ArcherStateKO_TeamA = ArcherStateKO_TeamA(self)
 
         self.brain.add_state(seeking_state)
         self.brain.add_state(attacking_state)
+        self.brain.add_state(fleeing_state)
         self.brain.add_state(ko_state)
 
         self.brain.set_state("seeking")
@@ -73,13 +75,13 @@ class Archer_TeamA(Character):
         ]
 
         if self.can_level_up():
-            if self.levels < 3:
+            if self.levels < 2:
                 self.level_up("speed")
             else:
-                if self.levels % 2 == 0:
-                    self.level_up("ranged damage")
-                else:
-                    self.level_up("ranged cooldown")
+                self.level_up("ranged cooldown")
+                # if self.levels % 2 == 0:
+                # else:
+                #     self.level_up("ranged damage")
             self.levels += 1
 
 
@@ -241,6 +243,10 @@ class ArcherStateAttacking_TeamA(State):
             self.archer.velocity *= self.archer.maxSpeed
 
     def check_conditions(self) -> str:
+        # If less than 50% hp
+        if self.archer.current_hp < (self.archer.max_hp / 100 * 50):
+            return "fleeing"
+
         # target is gone
         if (
             self.archer.world.get(self.archer.target.id) is None
@@ -271,12 +277,30 @@ class ArcherStateAttacking_TeamA(State):
         return None
 
 
+class ArcherStateFleeing_TeamA(State):
+    def __init__(self, archer):
+        State.__init__(self, "fleeing")
+        self.archer: Archer_TeamA = archer
+    
+    def do_actions(self) -> None:
+        self.archer.heal()
+        return None
+
+    def check_conditions(self) -> str:
+        if self.archer.healing_cooldown > 0:
+            return "seeking"
+        return None
+
+    def entry_actions(self):
+        return None
+
+
 class ArcherStateKO_TeamA(State):
     def __init__(self, archer):
         State.__init__(self, "ko")
         self.archer: Archer_TeamA = archer
 
-    def do_actions(self):
+    def do_actions(self) -> None:
         return None
 
     def check_conditions(self) -> str:
