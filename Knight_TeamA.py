@@ -98,9 +98,7 @@ class KnightStateSeeking_TeamA(State):
 
     def check_conditions(self):
 
-        # if stuck, unstuck yourself
-        if self.knight.velocity == 0:
-            return "fleeing"
+        #FIND OUT HOW TO MAKE CHARACTERS UNSTUCK
 
         # check if opponent is in range
         nearest_opponent = self.knight.world.get_nearest_opponent(self.knight)
@@ -125,6 +123,7 @@ class KnightStateSeeking_TeamA(State):
         if (self.knight.position[0] - nearest_node.position[0] > 0 or \
             self.knight.position[1] - nearest_node.position[1] > 0):
             further_node_index = list(self.knight.path_graph.nodes.values()).index(nearest_node)
+            #take the node that's directly "in front" of the closer node
             nearest_node = list(self.knight.path_graph.nodes.values())[further_node_index + 1]
 
         self.path = pathFindAStar(self.knight.path_graph, \
@@ -172,17 +171,16 @@ class KnightStateAttacking_TeamA(State):
             self.knight.target = None
             self.knight.enemy_decoy = None
             if self.knight.current_hp >= self.knight.max_hp * 0.75:
-                # if HP >= 80%, continue seeking
+                # if HP >= 75%, continue seeking
                 return "seeking"
             else:
                 #change to fleeing state when hp dips below 75% for testing purposes, 40% for actual game
                 return "fleeing"
-        # target is chasing another character (for bait/decoy situations), switch target
+        # target is chasing another character (for bait/decoy situations) -> ignore the target
         elif self.knight.target.brain.active_state == "attacking" and self.knight.target.target != self.knight:
             self.knight.enemy_decoy = self.knight.target
             return "seeking"
             
-        
         #while attacking, taking some dmg and no ally is around, flee
         if self.knight.current_hp <= self.knight.max_hp * .66:
             nearest_ally = self.knight.get_nearest_ranged_ally()
@@ -276,6 +274,7 @@ class KnightStateFleeing_TeamA(State):
         if (self.knight.position[0] - nearest_node.position[0] < 0 or \
             self.knight.position[1] - nearest_node.position[1] < 0):
             further_node_index = list(self.knight.path_graph.nodes.values()).index(nearest_node)
+            #take the node that's directly "behind" the further node
             nearest_node = list(self.knight.path_graph.nodes.values())[further_node_index - 1]
 
         self.path = pathFindAStar(self.knight.path_graph, \
