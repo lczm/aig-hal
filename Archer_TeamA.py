@@ -33,6 +33,7 @@ class Archer_TeamA(Character):
         self.projectile_range: int = 100
         self.projectile_speed: int = 100
 
+        self.levels:int = 0
         self.time_passed: float = 0
         self.current_connection: int = 0
 
@@ -72,9 +73,14 @@ class Archer_TeamA(Character):
         ]
 
         if self.can_level_up():
-            # choice = randint(0, len(level_up_stats) - 1)
-            # self.level_up(level_up_stats[choice])
-            self.level_up("speed")
+            if self.levels < 3:
+                self.level_up("speed")
+            else:
+                if self.levels % 2 == 0:
+                    self.level_up("ranged damage")
+                else:
+                    self.level_up("ranged cooldown")
+            self.levels += 1
 
 
 class ArcherStateSeeking_TeamA(State):
@@ -170,26 +176,26 @@ class ArcherStateAttacking_TeamA(State):
 
                 if self.archer.current_connection > 0 and (self.archer.position - self.archer.move_target.position).length() < 8:
                     self.archer.current_connection -= 1
-                    print("### range attacked, current_connection - 1")
+                    # print("### range attacked, current_connection - 1")
 
                 self.archer.move_target.position = self.archer.path[
                     self.archer.current_connection
                 ].fromNode.position
                 self.archer.velocity = self.archer.move_target.position - self.archer.position
 
-                print("@@@ range attacked")
+                # print("@@@ range attacked")
             else:
                 # if can attack and not within range of the opponent, move towards
                 # the opponent via the grid
                 if self.archer.current_connection < self.archer.path_length - 1 and (self.archer.position - self.archer.move_target.position).length() < 8:
                     self.archer.current_connection += 1
-                    print("### trying to range attack, current_connection + 1")
+                    # print("### trying to range attack, current_connection + 1")
 
                 self.archer.move_target.position = self.archer.path[
                     self.archer.current_connection
                 ].toNode.position
                 self.archer.velocity = self.archer.move_target.position - self.archer.position
-                print("@@@ trying to range attack")
+                # print("@@@ trying to range attack")
         # cannot attack
         else:
             diff:Vector2 = self.archer.position - self.archer.path[self.archer.current_connection].fromNode.position
@@ -205,26 +211,26 @@ class ArcherStateAttacking_TeamA(State):
             if self.archer.min_target_distance > opponent_distance:
                 if self.archer.current_connection > 0 and (self.archer.position - self.archer.move_target.position).length() < 8:
                     self.archer.current_connection -= 1
-                    print("### cannot attack, running from the range of the opponent - 1")
+                    # print("### cannot attack, running from the range of the opponent - 1")
 
                 self.archer.move_target.position = self.archer.path[
                     self.archer.current_connection
                 ].fromNode.position
                 self.archer.velocity = self.archer.move_target.position - self.archer.position
-                print("@@@ cannot attack, running from the range of the opponent")
-                print(f"fromNode: {self.archer.path[self.archer.current_connection].fromNode.position}")
-                print(f"toNode: {self.archer.path[self.archer.current_connection].toNode.position}")
-                print(f"current_connection: {self.archer.current_connection}")
+                # print("@@@ cannot attack, running from the range of the opponent")
+                # print(f"fromNode: {self.archer.path[self.archer.current_connection].fromNode.position}")
+                # print(f"toNode: {self.archer.path[self.archer.current_connection].toNode.position}")
+                # print(f"current_connection: {self.archer.current_connection}")
             else:
                 if self.archer.current_connection > 0 and (self.archer.position - self.archer.move_target.position).length() < 8:
                     self.archer.current_connection -= 1
-                    print("### cannot attack, running towards the opponent - 1")
+                    # print("### cannot attack, running towards the opponent - 1")
 
                 self.archer.move_target.position = self.archer.path[
                     self.archer.current_connection
                 ].fromNode.position
                 self.archer.velocity = self.archer.move_target.position - self.archer.position
-                print("@@@ cannot attack, running towards the opponent")
+                # print("@@@ cannot attack, running towards the opponent")
 
         if self.archer.velocity.length() > 0:
             self.archer.velocity.normalize_ip()
