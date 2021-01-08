@@ -202,13 +202,13 @@ class ArcherStateAttacking_TeamA(State):
             if self.archer.current_connection > 0 and diff.x < 0 and diff.y < 0:
                 self.archer.current_connection -= 1
 
-            self.archer.move_target.position = self.archer.path[
-                self.archer.current_connection
-            ].fromNode.position
-            self.archer.velocity = self.archer.move_target.position - self.archer.position
-
             # if within the range of the opponent, run
             if self.archer.min_target_distance > opponent_distance:
+                self.archer.move_target.position = self.archer.path[
+                    self.archer.current_connection
+                ].fromNode.position
+                self.archer.velocity = self.archer.move_target.position - self.archer.position
+
                 if self.archer.current_connection > 0 and (self.archer.position - self.archer.move_target.position).length() < 8:
                     self.archer.current_connection -= 1
                     # print("### cannot attack, running from the range of the opponent - 1")
@@ -222,13 +222,17 @@ class ArcherStateAttacking_TeamA(State):
                 # print(f"toNode: {self.archer.path[self.archer.current_connection].toNode.position}")
                 # print(f"current_connection: {self.archer.current_connection}")
             else:
+                self.archer.move_target.position = self.archer.path[
+                    self.archer.current_connection
+                ].toNode.position
                 if self.archer.current_connection > 0 and (self.archer.position - self.archer.move_target.position).length() < 8:
                     self.archer.current_connection -= 1
                     # print("### cannot attack, running towards the opponent - 1")
 
                 self.archer.move_target.position = self.archer.path[
                     self.archer.current_connection
-                ].fromNode.position
+                ].toNode.position
+
                 self.archer.velocity = self.archer.move_target.position - self.archer.position
                 # print("@@@ cannot attack, running towards the opponent")
 
