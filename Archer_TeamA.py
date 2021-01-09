@@ -7,15 +7,7 @@ from Base import *
 
 from Character import *
 from State import *
-
-"""
-    TODO : Strategy for levelling up stats
-    TODO : Fleeing state
-    TODO : Fleeing(?), strategy for dealing with health
-
-    TODO : The rest of the TODOs
-"""
-
+from Utils_Mayasol import *
 
 class Archer_TeamA(Character):
     def __init__(self, world, image, projectile_image, base, position):
@@ -37,7 +29,7 @@ class Archer_TeamA(Character):
         self.time_passed: float = 0
         self.current_connection: int = 0
 
-        self.path_graph: List[Node] = self.world.paths[
+        self.path_graph: Graph = self.world.paths[
             randint(0, len(self.world.paths) - 1)
         ]
         self.path: List[NodeRecord] = pathFindAStar(
@@ -50,11 +42,13 @@ class Archer_TeamA(Character):
         seeking_state: ArcherStateAttacking_TeamA = ArcherStateSeeking_TeamA(self)
         attacking_state: ArcherStateAttacking_TeamA = ArcherStateAttacking_TeamA(self)
         fleeing_state: ArcherStateFleeing_TeamA = ArcherStateFleeing_TeamA(self)
+        reposition_state: ArcherRepositionState_TeamA = ArcherRepositionState_TeamA(self)
         ko_state: ArcherStateKO_TeamA = ArcherStateKO_TeamA(self)
 
         self.brain.add_state(seeking_state)
         self.brain.add_state(attacking_state)
         self.brain.add_state(fleeing_state)
+        self.brain.add_state(reposition_state)
         self.brain.add_state(ko_state)
 
         self.brain.set_state("seeking")
@@ -160,6 +154,8 @@ class ArcherStateAttacking_TeamA(State):
         # TODO : Change target to the target that is closest to the archer
         # TODO : once changed, check surrounding radius by a certain amoutn
         # If enemy hp is (one-hit) status, change target to that
+
+        get_enemies_positions_in_lanes(paths=self.archer.world.paths, person=self.archer)
 
         nearest_opponent = self.archer.world.get_nearest_opponent(self.archer)
         if nearest_opponent is not None:
@@ -309,6 +305,20 @@ class ArcherStateFleeing_TeamA(State):
     def entry_actions(self):
         return None
 
+
+class ArcherRepositionState_TeamA(State):
+    def __init__(self, archer):
+        State.__init__(self, "reposition")
+        self.archer: Archer_TeamA = archer
+    
+    def do_actions(self) -> None:
+        return None
+
+    def check_conditions(self) -> str:
+        return None
+
+    def entry_actions(self) -> None:
+        return None
 
 class ArcherStateKO_TeamA(State):
     def __init__(self, archer):
