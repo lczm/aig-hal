@@ -115,18 +115,18 @@ class ArcherStateSeeking_TeamA(State):
 
     def do_actions(self) -> None:
         # If using base kiting paths, reset them
-        # if len(self.archer.path) == 1:
-            # if (self.archer.position - self.archer.move_target.position).length() < 8:
-            #     # Reset current connection
-            #     self.archer.current_connection = 0
-            #     self.archer.path_graph: List[Node] = self.archer.world.paths[
-            #         randint(0, len(self.archer.world.paths) - 1)
-            #     ]
-            #     self.archer.path = get_path_to_enemy_base(self.archer, self.archer.path_graph, self.archer.position)
-            #     self.archer.move_target.position = self.archer.path[
-            #         self.archer.current_connection
-            #     ].fromNode.position
-            #     print("@#########@#@#@#@#@#")
+        if len(self.archer.path) == 1:
+            if (self.archer.position - self.archer.move_target.position).length() < 8:
+                # Reset current connection
+                self.archer.current_connection = 0
+                self.archer.path_graph: List[Node] = self.archer.world.paths[
+                    randint(0, len(self.archer.world.paths) - 1)
+                ]
+                self.archer.path = get_path_to_enemy_base(self.archer, self.archer.path_graph, self.archer.position)
+                self.archer.move_target.position = self.archer.path[
+                    self.archer.current_connection
+                ].toNode.position
+                # print("@#########@#@#@#@#@#")
 
         self.archer.velocity = self.archer.move_target.position - self.archer.position
         if self.archer.velocity.length() > 0:
@@ -196,10 +196,11 @@ class ArcherStateSeeking_TeamA(State):
             # self.archer.current_connection = 0
             # self.archer.move_target.position = self.archer.path[0].fromNode.position
             self.archer.move_target.position = self.archer.path[self.archer.current_connection].toNode.position
-        else:
-            self.archer.move_target.position = self.archer.path_graph.nodes[
-                self.archer.base.target_node_index
-            ].position
+        # else:
+        #     self.archer.move_target.position = self.archer.path_graph.nodes[
+        #         self.archer.base.target_node_index
+        #     ].position
+        return None
 
 
 class ArcherStateAttacking_TeamA(State):
@@ -405,6 +406,13 @@ class ArcherRepositionState_TeamA(State):
         return None
 
     def check_conditions(self) -> str:
+        # If there is an enemy nearby while trying to reposition, just attack the enemy
+        nearest_opponent = self.archer.world.get_nearest_opponent(self.archer)
+        if nearest_opponent is not None:
+            if (self.archer.position - nearest_opponent.position).length() <= self.archer.min_target_distance:
+                self.archer.target = nearest_opponent
+                return "attacking"
+
         if self.archer.current_connection == 0 and (self.archer.position - self.archer.move_target.position).length() < 8:
             self.archer.path_graph = get_graph(self.archer, self.archer.max_lane)
             self.archer.path = get_path_to_enemy_base(self.archer, self.archer.path_graph, self.archer.position)
