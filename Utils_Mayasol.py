@@ -15,6 +15,7 @@ class Lane(enum.Enum):
     Top = 1
     Mid = 2
     Bot = 3
+    Base = 4
 
 # TODO : Mid lanes can be split into mid-left, mid-right?
 def get_lane(node_id:int) -> Lane:
@@ -26,8 +27,10 @@ def get_lane(node_id:int) -> Lane:
         return Lane.Top
     elif node_id in mid_lanes:
         return Lane.Mid
-    else:
+    elif node_id in bot_lanes:
         return Lane.Bot
+    else:
+        return Lane.Base
 
 def get_node_from_id(paths: List[Graph], node_id: int) -> Node:
     graph: Graph
@@ -36,8 +39,8 @@ def get_node_from_id(paths: List[Graph], node_id: int) -> Node:
             return graph.nodes[node_id]
     return None
 
-def get_lane_character(paths: List[Graph], person: Character) -> Lane:
-    return get_lane(get_nearest_node(paths, person.position))
+def get_lane_character(graph: Graph, person: Character) -> Lane:
+    return get_lane(get_nearest_node_local(graph, person.position).id)
 
 # TODO : Mid_top and Mid_bot separation
 def get_graph(person: Character, lane: Lane) -> Graph:
@@ -75,16 +78,29 @@ def get_path_to_enemy_base(person:Character, path_graph: Graph, position: Vector
 #         get_node_from_id(person.world.paths, 0)
 #     )
 
+def get_nearest_node_local(graph: Graph, position: Vector2) -> Node:
+    nearest = None
+    nearest_distance = inf
+
+    # Typehints
+    node:Node
+    for node in graph.nodes.values():
+        distance = (position - Vector2(node.position)).length()
+        if distance < nearest_distance:
+            nearest_distance = distance
+            nearest = node
+    return nearest
+
+
 # The reason why this is needed is because the get_nearest_node() implemented
 # is a method, not a function, and it cannot be used without states
-def get_nearest_node(paths: List[Graph], position: Vector2) -> Node:
+def get_nearest_node_global(paths: List[Graph], position: Vector2) -> Node:
     nearest = None
     nearest_distance = inf
 
     # Typehints
     graph:Graph
     node:Node
-
     for graph in paths:
         for node in graph.nodes.values():
             distance = (position - Vector2(node.position)).length()
@@ -127,7 +143,7 @@ def get_enemies_positions_in_lanes(
         if entity.name == "base" or entity.name == "tower":
             continue
 
-        node = get_nearest_node(paths, entity.position)
+        node = get_nearest_node_global(paths, entity.position)
         enemy_positions.append(node.id)
     
     for node_id in enemy_positions:
