@@ -39,6 +39,15 @@ def get_node_from_id(paths: List[Graph], node_id: int) -> Node:
             return graph.nodes[node_id]
     return None
 
+def get_initial_start_node(person: Character) -> Node:
+    print('id', person.team_id)
+    if person.team_id == 0:   # Blue team
+        return get_node_from_id(person.world.paths, 0)
+    elif person.team_id == 1: # Red  team
+        return get_node_from_id(person.world.paths, 4)
+    else: # Neutral... or some others
+        return None
+
 def get_lane_character(graph: Graph, person: Character) -> Lane:
     return get_lane(get_nearest_node_local(graph, person.position).id)
 
@@ -63,12 +72,11 @@ def get_mid_bot_graph(person: Character) -> Graph:
 def get_bot_graph(person: Character) -> Graph:
     return person.world.paths[BOT_PATH]
 
-def get_path_to_enemy_base(person:Character, path_graph: Graph, position: Vector2) -> List[NodeRecord]:
-    # TODO : use person to check team, currently set to 4 (red base)
+def get_path_to_enemy_base(person:Character, path_graph: Graph, position: Vector2) -> List[Connection]:
     return pathFindAStar(
         path_graph, 
         path_graph.get_nearest_node(position), 
-        get_node_from_id(person.world.paths, 4)
+        get_node_from_id(person.world.paths, person.base.target_node_index)
     )
 
 # def get_path_to_my_base(person: Character, path_graph: Graph, position: Vector2) -> List[NodeRecord]:
