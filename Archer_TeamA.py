@@ -227,26 +227,26 @@ class ArcherStateAttacking_TeamA(State):
         ).length()
 
         # At the start of the path graph, node 0
-        if (self.archer.current_connection == 0 and 
-            (self.archer.position - self.archer.move_target.position).length() < 8 and
-            opponent_distance <= self.archer.min_target_distance):
-            opponent_direction = self.archer.position - self.archer.target.position
-            if self.archer.team_id == 0:
-                if opponent_direction.y < 0: # If the opponent is below me, kite upwards
-                    self.archer.path = self.archer.path_base_kite_right
-                    print("Opponent is below me")
-                else: # If the opponent is above me, kite downwards
-                    self.archer.path = self.archer.path_base_kite_left
-                    print("Opponent is above me")
-            else:
-                if opponent_direction.y > 0:
-                    self.archer.path = self.archer.path_base_kite_right
-                else:
-                    self.archer.path = self.archer.path_base_kite_left
+        # if (self.archer.current_connection == 0 and 
+        #     (self.archer.position - self.archer.move_target.position).length() < 8 and
+        #     opponent_distance <= self.archer.min_target_distance):
+        #     opponent_direction = self.archer.position - self.archer.target.position
+        #     if self.archer.team_id == 0:
+        #         if opponent_direction.y < 0: # If the opponent is below me, kite upwards
+        #             self.archer.path = self.archer.path_base_kite_right
+        #             print("Opponent is below me")
+        #         else: # If the opponent is above me, kite downwards
+        #             self.archer.path = self.archer.path_base_kite_left
+        #             print("Opponent is above me")
+        #     else:
+        #         if opponent_direction.y > 0:
+        #             self.archer.path = self.archer.path_base_kite_right
+        #         else:
+        #             self.archer.path = self.archer.path_base_kite_left
             
-            self.archer.move_target.position = self.archer.path[
-                self.archer.current_connection
-            ].toNode.position
+        #     self.archer.move_target.position = self.archer.path[
+        #         self.archer.current_connection
+        #     ].toNode.position
 
         # if can attack
         if self.archer.current_ranged_cooldown <= 0:
@@ -388,7 +388,7 @@ class ArcherStateFleeing_TeamA(State):
         
         # If cant heal, there is no point in staying in the fleeing state, just
         # attack while it still can
-        if self.archer.current_healing_cooldown > 0:
+        if self.archer.current_healing_cooldown > 0 and self.archer.target is not None:
             return "attacking"
 
         return None

@@ -40,7 +40,6 @@ def get_node_from_id(paths: List[Graph], node_id: int) -> Node:
     return None
 
 def get_initial_start_node(person: Character) -> Node:
-    print('id', person.team_id)
     if person.team_id == 0:   # Blue team
         return get_node_from_id(person.world.paths, 0)
     elif person.team_id == 1: # Red  team
