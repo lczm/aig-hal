@@ -1,7 +1,7 @@
 import pygame
 
 from random import randint, random
-from typing import List
+from typing import List, Dict
 from Graph import *
 from Base import *
 
@@ -25,18 +25,21 @@ class Archer_TeamA(Character):
         self.projectile_range: int = 100
         self.projectile_speed: int = 100
 
-        self.levels:int = 0
+        self.levels: int = 0
         self.time_passed: float = 0
         self.current_connection: int = 0
+
+        self.max_lane: Lane = 0
 
         self.path_graph: Graph = self.world.paths[
             randint(0, len(self.world.paths) - 1)
         ]
-        self.path: List[NodeRecord] = pathFindAStar(
-            self.path_graph,
-            self.path_graph.get_nearest_node(self.position),
-            self.path_graph.nodes[self.base.target_node_index],
-        )
+        # self.path: List[NodeRecord] = pathFindAStar(
+        #     self.path_graph,
+        #     self.path_graph.get_nearest_node(self.position),
+        #     self.path_graph.nodes[self.base.target_node_index],
+        # )
+        self.path: List[NodeRecord] = get_path_to_enemy_base(self, self.path_graph, self.position)
         self.path_length: int = len(self.path)
 
         seeking_state: ArcherStateAttacking_TeamA = ArcherStateSeeking_TeamA(self)
@@ -95,6 +98,22 @@ class ArcherStateSeeking_TeamA(State):
             self.archer.velocity *= self.archer.maxSpeed
 
     def check_conditions(self) -> str:
+        if (self.archer.position - self.archer.base.position).length() > 300:
+            enemy_lanes: Dict[int, int] = get_enemies_positions_in_lanes(self.archer.world.paths, self.archer)
+            current_lane: Lane = get_lane_character(self.archer.world.paths, self.archer)
+
+            max_enemies:int = 0
+            max_lane:Lane = 0
+            for key, value in enemy_lanes.items():
+                if value > 0:
+                    value = value
+                    max_lane = Lane(key)
+
+            # If currently not at the lane with the most enemies
+            if current_lane != max_lane:
+                self.archer.max_lane = max_lane
+                return "reposition"
+
         # check if opponent is in range
         nearest_opponent = self.archer.world.get_nearest_opponent(self.archer)
         if nearest_opponent is not None:
@@ -154,8 +173,6 @@ class ArcherStateAttacking_TeamA(State):
         # TODO : Change target to the target that is closest to the archer
         # TODO : once changed, check surrounding radius by a certain amoutn
         # If enemy hp is (one-hit) status, change target to that
-
-        get_enemies_positions_in_lanes(paths=self.archer.world.paths, person=self.archer)
 
         nearest_opponent = self.archer.world.get_nearest_opponent(self.archer)
         if nearest_opponent is not None:
@@ -312,12 +329,33 @@ class ArcherRepositionState_TeamA(State):
         self.archer: Archer_TeamA = archer
     
     def do_actions(self) -> None:
+        self.archer.velocity = self.archer.move_target.position - self.archer.position
+        if self.archer.velocity.length() > 0:
+            self.archer.velocity.normalize_ip()
+            self.archer.velocity *= self.archer.maxSpeed
         return None
 
     def check_conditions(self) -> str:
+        if self.archer.current_connection == 0 and (self.archer.position - self.archer.move_target.position).length() < 8:
+            self.archer.path_graph = get_graph(self.archer, self.archer.max_lane)
+            self.archer.path = get_path_to_enemy_base(self.archer, self.archer.path_graph, self.archer.position)
+            return "seeking"
+
+        if (self.archer.position - self.archer.move_target.position).length() < 8:
+            # continue on path
+            if self.archer.current_connection > 0:
+                self.archer.current_connection -= 1
+                self.archer.move_target.position = self.archer.path[
+                    self.archer.current_connection
+                ].fromNode.position
         return None
 
     def entry_actions(self) -> None:
+        # Upon entering into reposition state, move to the nearest max_lane node
+        # self.archer.path: List[NodeRecord] = get_path_to_my_base(self.archer, self.archer.path_graph, self.archer.position)
+        self.archer.move_target.position = self.archer.path[
+            self.archer.current_connection
+        ].fromNode.position
         return None
 
 class ArcherStateKO_TeamA(State):
