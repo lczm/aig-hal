@@ -133,7 +133,4 @@ def get_enemies_positions_in_lanes(
     for node_id in enemy_positions:
         enemy_positions_in_lane[get_lane(node_id)] += 1
     
-    for key, value in enemy_positions_in_lane.items():
-        print(Lane(key), " ", value)
-    
     return enemy_positions_in_lane
