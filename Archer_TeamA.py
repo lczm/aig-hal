@@ -134,6 +134,10 @@ class ArcherStateSeeking_TeamA(State):
             self.archer.velocity *= self.archer.maxSpeed
 
     def check_conditions(self) -> str:
+        if (self.archer.current_hp < (self.archer.max_hp / 100 * 50) and 
+            self.archer.current_healing_cooldown <= 0):
+            return "fleeing"
+
         if (self.archer.position - self.archer.base.position).length() > 300:
             enemy_lanes: Dict[int, int] = get_enemies_positions_in_lanes(self.archer.world.paths, self.archer)
             current_lane: Lane = get_lane_character(self.archer.path_graph, self.archer)
@@ -319,7 +323,7 @@ class ArcherStateAttacking_TeamA(State):
     def check_conditions(self) -> str:
         # If less than 50% hp and can heal
         if (self.archer.current_hp < (self.archer.max_hp / 100 * 50) and 
-            self.archer.current_healing_cooldown >= 0):
+            self.archer.current_healing_cooldown <= 0):
             return "fleeing"
 
         # target is gone
