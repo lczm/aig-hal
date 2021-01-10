@@ -150,7 +150,8 @@ def get_enemies_positions_in_lanes(
         if entity.name == "base" or entity.name == "tower":
             continue
 
-        node = get_nearest_node_global(paths, entity.position)
+        # node = get_nearest_node_global(paths, entity.position)
+        node = get_nearest_node_global(paths, entity.move_target.position)
         enemy_positions.append(node.id)
     
     for node_id in enemy_positions:
