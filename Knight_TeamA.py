@@ -14,10 +14,10 @@ class Knight_TeamA(Character):
 
         self.base = base
         self.position = position
-        self.position_check = position
         self.move_target = GameEntity(world, "knight_move_target", None)
         self.target = None
         self.enemy_decoy = None
+        self.previously_visited_node = None
         self.world = world
 
         self.maxSpeed = 80
@@ -76,8 +76,6 @@ class Knight_TeamA(Character):
             choice = 0 #always hp
             self.level_up(level_up_stats[choice])
 
-   
-
 
 class KnightStateSeeking_TeamA(State):
 
@@ -91,7 +89,7 @@ class KnightStateSeeking_TeamA(State):
 
     def do_actions(self):
 
-        #FIND OUT HOW TO MAKE CHARACTERS UNSTUCK...if possible
+        self.knight.heal()
 
         self.knight.velocity = self.knight.move_target.position - self.knight.position
         if self.knight.velocity.length() > 0:
@@ -113,6 +111,7 @@ class KnightStateSeeking_TeamA(State):
 
             # continue on path
             if self.current_connection < self.path_length:
+                self.knight.previously_visited_node = self.path[self.current_connection]
                 self.knight.move_target.position = self.path[self.current_connection].toNode.position
                 self.current_connection += 1
             
@@ -120,18 +119,15 @@ class KnightStateSeeking_TeamA(State):
 
 
     def entry_actions(self):
-        nearest_node = self.knight.path_graph.get_nearest_node(self.knight.position)
-        if (self.knight.position[0] - nearest_node.position[0] > 0 or \
-            self.knight.position[1] - nearest_node.position[1] > 0):
-            further_node_index = list(self.knight.path_graph.nodes.values()).index(nearest_node)
-            #take the node that's directly "in front" of the closest node to move forward
-            nearest_node = list(self.knight.path_graph.nodes.values())[further_node_index + 1]
-
         self.path = pathFindAStar(self.knight.path_graph, \
-                                  nearest_node, \
+                                  self.knight.path_graph.get_nearest_node(self.knight.position), \
                                   self.knight.path_graph.nodes[self.knight.base.target_node_index])
 
-        
+        if (self.knight.previously_visited_node is not None):
+            self.path = pathFindAStar(self.knight.path_graph, \
+                                  self.knight.previously_visited_node.toNode, \
+                                  self.knight.path_graph.nodes[self.knight.base.target_node_index])
+      
         self.path_length = len(self.path)
 
         if (self.path_length > 0):
@@ -150,21 +146,14 @@ class KnightStateAttacking_TeamA(State):
         self.knight = knight
 
     def do_actions(self):
-        # colliding with target
-        nearest_node = self.knight.path_graph.get_nearest_node(self.knight.position)
-        if (self.knight.position[0] - nearest_node.position[0] < 0 or \
-            self.knight.position[1] - nearest_node.position[1] < 0):
-            further_node_index = list(self.knight.path_graph.nodes.values()).index(nearest_node)
-            #take the node that's directly "behind" the further node to fall back
-            nearest_node = list(self.knight.path_graph.nodes.values())[further_node_index - 1]
-
         if pygame.sprite.collide_rect(self.knight, self.knight.target):
             self.knight.velocity = Vector2(0, 0)
             self.knight.melee_attack(self.knight.target)
             if self.knight.current_melee_cooldown == self.knight.melee_cooldown:
-                self.knight.velocity = nearest_node.position - self.knight.position
-                self.knight.velocity.normalize_ip()
-                self.knight.velocity *= self.knight.maxSpeed
+                self.knight.velocity = self.knight.previously_visited_node.fromNode.position - self.knight.position
+                if self.knight.velocity.length() > 0:
+                    self.knight.velocity.normalize_ip()
+                    self.knight.velocity *= self.knight.maxSpeed
         else:
             if self.knight.current_melee_cooldown <= self.knight.melee_cooldown * .6:
                 self.knight.velocity = self.knight.target.position - self.knight.position
@@ -174,6 +163,10 @@ class KnightStateAttacking_TeamA(State):
 
 
     def check_conditions(self):
+        #if hitting base, keep hitting and dont run
+        if self.knight.target.brain.active_state == "base_state":
+            return None
+
         # target is gone
         if self.knight.world.get(self.knight.target.id) is None or self.knight.target.ko:
             self.knight.target = None
@@ -182,7 +175,7 @@ class KnightStateAttacking_TeamA(State):
                 # if HP >= 75%, continue seeking
                 return "seeking"
             else:
-                #change to fleeing state when hp dips below 75% for testing purposes, 40% for actual game
+                #change to fleeing state when hp dips below 75% for testing purposes, 45% for actual game
                 return "fleeing"
         # target is chasing another character (for bait/decoy situations) -> ignore the target
         elif self.knight.target.brain.active_state == "attacking" and self.knight.target.target != self.knight:
@@ -270,17 +263,27 @@ class KnightStateFleeing_TeamA(State):
                     return "attacking"
         
         if (self.knight.position - self.knight.move_target.position).length() < 8:
-            # continue on path
             if self.current_connection < self.path_length:
+                self.knight.previously_visited_node = self.path[self.current_connection]
                 self.knight.move_target.position = self.path[self.current_connection].toNode.position
                 self.current_connection += 1
             
         return None
 
     def entry_actions(self):
-        nearest_node = self.knight.path_graph.get_nearest_node(self.knight.position)
-        if (self.knight.position[0] - nearest_node.position[0] < 0 or \
-            self.knight.position[1] - nearest_node.position[1] < 0):
+        self.path = pathFindAStar(self.knight.path_graph, \
+                                  self.knight.previously_visited_node.fromNode, \
+                                  self.knight.path_graph.nodes[self.knight.base.spawn_node_index])
+
+        self.path_length = len(self.path)
+
+        if (self.path_length > 0):
+            self.current_connection = 0
+            self.knight.move_target.position = self.path[0].fromNode.position
+        else:
+            self.knight.move_target.position = self.knight.path_graph.nodes[self.knight.base.spawn_node_index].position
+
+        '''nearest_node = self.knight.path_graph.get_nearest_node(self.knight.position)
             further_node_index = list(self.knight.path_graph.nodes.values()).index(nearest_node)
             #take the node that's directly "behind" the further node to fall back
             nearest_node = list(self.knight.path_graph.nodes.values())[further_node_index - 1]
@@ -296,4 +299,6 @@ class KnightStateFleeing_TeamA(State):
             self.knight.move_target.position = self.path[0].fromNode.position
 
         else:
-            self.knight.move_target.position = self.knight.path_graph.nodes[self.knight.base.spawn_node_index].position
+            self.knight.move_target.position = self.knight.path_graph.nodes[self.knight.base.spawn_node_index].position'''
+
+        return None
