@@ -51,13 +51,15 @@ def get_lane_character(graph: Graph, person: Character) -> Lane:
     return get_lane(get_nearest_node_local(graph, person.position).id)
 
 # TODO : Mid_top and Mid_bot separation
-def get_graph(person: Character, lane: Lane) -> Graph:
+def get_graph(person: Character, graph: Graph, lane: Lane) -> Graph:
     if Lane(lane) == Lane.Top:
         return get_top_graph(person)
     elif Lane(lane) == Lane.Mid:
         return get_mid_top_graph(person)
     elif Lane(lane) == Lane.Bot:
         return get_bot_graph(person)
+    else:
+        return graph
 
 def get_top_graph(person: Character) -> Graph:
     return person.world.paths[TOP_PATH]

@@ -198,6 +198,7 @@ class ArcherStateSeeking_TeamA(State):
                 self.archer.move_target.position = self.archer.path[
                     self.archer.current_connection
                 ].toNode.position
+                print("@@@@ Seting self.archer.path, Seeking, L:201")
 
                 self.archer.on_base_kiting_path = False
 
@@ -211,7 +212,8 @@ class ArcherStateSeeking_TeamA(State):
             self.archer.current_healing_cooldown <= 0):
             return "fleeing"
 
-        if self.archer.on_base_kiting_path is False and (self.archer.position - self.archer.base.position).length() > 300:
+        if (self.archer.on_base_kiting_path is False and
+            (self.archer.position - self.archer.base.position).length() > 500):
             enemy_lanes: Dict[int, int] = get_enemies_positions_in_lanes(self.archer.world.paths, self.archer)
             current_lane: Lane = get_lane_character(self.archer.path_graph, self.archer)
 
@@ -292,10 +294,12 @@ class ArcherStateAttacking_TeamA(State):
             if self.archer.team_id == 0:
                 if opponent_direction.y < 0: # If the opponent is below me, kite upwards
                     self.archer.path = self.archer.path_base_kite_right
-                    print("Opponent is below me")
+                    print("Setting self.archer.path to self.archer.path_base_kite_right")
+                    # print("Opponent is below me")
                 else: # If the opponent is above me, kite downwards
                     self.archer.path = self.archer.path_base_kite_left
-                    print("Opponent is above me")
+                    # print("Opponent is above me")
+                    print("Setting self.archer.path to self.archer.path_base_kite_left")
             else:
                 if opponent_direction.y > 0:
                     self.archer.path = self.archer.path_base_kite_left
@@ -368,6 +372,7 @@ class ArcherStateAttacking_TeamA(State):
         ).length()
         if opponent_distance > 200:
             self.archer.path = get_path_to_enemy_base(self.archer, self.archer.path_graph, self.archer.position)
+            print("Setting self.archer.path to get_path_enemy_base()")
             return "seeking"
 
         return None
@@ -433,8 +438,9 @@ class ArcherRepositionState_TeamA(State):
                 return "attacking"
 
         if self.archer.at_start_of_connection() and self.archer.at_node():
-            self.archer.path_graph = get_graph(self.archer, self.archer.max_lane)
+            self.archer.path_graph = get_graph(self.archer, self.archer.path_graph, self.archer.max_lane)
             self.archer.path = get_path_to_enemy_base(self.archer, self.archer.path_graph, self.archer.position)
+            print("Setting self.archer.path to get_enemy_base L:443")
             return "seeking"
 
         if self.archer.at_node():
