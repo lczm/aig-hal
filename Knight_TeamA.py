@@ -123,11 +123,11 @@ class KnightStateSeeking_TeamA(State):
                                   self.knight.path_graph.get_nearest_node(self.knight.position), \
                                   self.knight.path_graph.nodes[self.knight.base.target_node_index])
 
-        if (self.knight.previously_visited_node is not None):
+        if (self.knight.previously_visited_node != None):
             self.path = pathFindAStar(self.knight.path_graph, \
                                   self.knight.previously_visited_node.toNode, \
                                   self.knight.path_graph.nodes[self.knight.base.target_node_index])
-      
+
         self.path_length = len(self.path)
 
         if (self.path_length > 0):
