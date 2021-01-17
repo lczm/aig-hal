@@ -125,7 +125,7 @@ class KnightStateSeeking_TeamA(State):
                                   self.knight.path_graph.get_nearest_node(self.knight.position), \
                                   self.knight.path_graph.nodes[self.knight.base.target_node_index])
 
-        if (self.knight.previously_visited_node != None):
+        if (self.knight.previously_visited_node is not None and self.knight.previously_visited_node.toNode is not None):
             self.path = pathFindAStar(self.knight.path_graph, \
                                   self.knight.previously_visited_node.toNode, \
                                   self.knight.path_graph.nodes[self.knight.base.target_node_index])
@@ -277,10 +277,12 @@ class KnightStateFleeing_TeamA(State):
         return None
 
     def entry_actions(self):
+        
         # generate path upon fleeing
-        self.path = pathFindAStar(self.knight.path_graph, \
-                                  self.knight.previously_visited_node.fromNode, \
-                                  self.knight.path_graph.nodes[self.knight.base.spawn_node_index])
+        if (self.knight.previously_visited_node is not None and self.knight.previously_visited_node.fromNode is not None):
+            self.path = pathFindAStar(self.knight.path_graph, \
+                                    self.knight.previously_visited_node.fromNode, \
+                                    self.knight.path_graph.nodes[self.knight.base.spawn_node_index])
 
         self.path_length = len(self.path)
 
