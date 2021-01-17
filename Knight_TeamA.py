@@ -130,7 +130,10 @@ class KnightStateSeeking_TeamA(State):
                                   self.knight.previously_visited_node.toNode, \
                                   self.knight.path_graph.nodes[self.knight.base.target_node_index])
 
-        self.path_length = len(self.path)
+        if self.path is None:
+            self.path_length = 0
+        else:
+            self.path_length = len(self.path)
 
         if (self.path_length > 0):
             self.current_connection = 0
@@ -148,6 +151,7 @@ class KnightStateAttacking_TeamA(State):
         self.knight = knight
 
     def do_actions(self):
+
         #if collide against its target unit, hit enemy and fall back momentarily (kiting/orb walking)
         if pygame.sprite.collide_rect(self.knight, self.knight.target):
             self.knight.velocity = Vector2(0, 0)
@@ -170,16 +174,23 @@ class KnightStateAttacking_TeamA(State):
         #if hitting base, keep hitting and dont run
         if self.knight.target.brain.active_state == "base_state":
             return None
+        
+        ### experimental ###
+        if (self.knight.position - self.knight.previously_visited_node.fromNode.position).length() < 8:
+            # align knight to node direction
+            if self.current_connection > 0:
+                self.current_connection -= 1
+                self.knight.previously_visited_node = self.path[self.current_connection]
 
         # target is gone
         if self.knight.world.get(self.knight.target.id) is None or self.knight.target.ko:
             self.knight.target = None
             self.knight.enemy_decoy = None
-            if self.knight.current_hp >= self.knight.max_hp * 0.75:
-                # if HP >= 75%, continue seeking
+            if self.knight.current_hp >= self.knight.max_hp * 0.65:
+                # if HP >= 65%, continue seeking
                 return "seeking"
             else:
-                #change to fleeing state when hp dips below 75% for testing purposes, 45% for actual game
+                #change to fleeing state when hp dips below 65% for testing purposes, 45% for actual game
                 return "fleeing"
         # target is chasing another character (for bait/decoy situations) -> ignore the target
         elif self.knight.target.brain.active_state == "attacking" and self.knight.target.target != self.knight:
@@ -197,6 +208,15 @@ class KnightStateAttacking_TeamA(State):
         return None
 
     def entry_actions(self):
+
+        if (self.knight.previously_visited_node is not None and self.knight.previously_visited_node.toNode is not None):
+            self.path = pathFindAStar(self.knight.path_graph, \
+                                  self.knight.previously_visited_node.fromNode, \
+                                  self.knight.path_graph.nodes[self.knight.base.spawn_node_index])
+        
+        if self.path is not None:
+            self.current_connection = len(self.path)
+            
 
         return None
 
@@ -277,14 +297,17 @@ class KnightStateFleeing_TeamA(State):
         return None
 
     def entry_actions(self):
-        
+
         # generate path upon fleeing
         if (self.knight.previously_visited_node is not None and self.knight.previously_visited_node.fromNode is not None):
             self.path = pathFindAStar(self.knight.path_graph, \
                                     self.knight.previously_visited_node.fromNode, \
                                     self.knight.path_graph.nodes[self.knight.base.spawn_node_index])
 
-        self.path_length = len(self.path)
+        if self.path is None:
+            self.path_length = 0
+        else:
+            self.path_length = len(self.path)
 
         if (self.path_length > 0):
             self.current_connection = 0
