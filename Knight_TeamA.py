@@ -17,7 +17,6 @@ class Knight_TeamA(Character):
         self.move_target = GameEntity(world, "knight_move_target", None)
         self.target = None
         self.enemy_decoy = None
-        self.previously_visited_node = None
         self.world = world
 
         self.maxSpeed = 80
@@ -112,7 +111,6 @@ class KnightStateSeeking_TeamA(State):
         if (self.knight.position - self.knight.move_target.position).length() < 8:
             # continue on path
             if self.current_connection < self.path_length:
-                self.knight.previously_visited_node = self.path[self.current_connection]
                 self.knight.move_target.position = self.path[self.current_connection].toNode.position
                 self.current_connection += 1
             
@@ -123,11 +121,6 @@ class KnightStateSeeking_TeamA(State):
         #node-to-node pathfinding
         self.path = pathFindAStar(self.knight.path_graph, \
                                   self.knight.path_graph.get_nearest_node(self.knight.position), \
-                                  self.knight.path_graph.nodes[self.knight.base.target_node_index])
-
-        if (self.knight.previously_visited_node is not None and self.knight.previously_visited_node.toNode is not None):
-            self.path = pathFindAStar(self.knight.path_graph, \
-                                  self.knight.previously_visited_node.toNode, \
                                   self.knight.path_graph.nodes[self.knight.base.target_node_index])
 
         if self.path is None:
@@ -154,17 +147,18 @@ class KnightStateAttacking_TeamA(State):
 
         #if collide against its target unit, hit enemy and fall back momentarily (kiting/orb walking)
         if pygame.sprite.collide_rect(self.knight, self.knight.target):
-            self.knight.velocity = Vector2(0, 0)
+            #self.knight.velocity = Vector2(0, 0)
             self.knight.melee_attack(self.knight.target)
             if self.knight.current_melee_cooldown == self.knight.melee_cooldown:
-                self.knight.velocity = self.knight.previously_visited_node.fromNode.position - self.knight.position
+                self.knight.velocity = self.knight.move_target.position - self.knight.position
                 if self.knight.velocity.length() > 0:
                     self.knight.velocity.normalize_ip()
                     self.knight.velocity *= self.knight.maxSpeed
         else:
             #move towards enemy and hit again if melee cooldown is about to be lifted
             if self.knight.current_melee_cooldown <= self.knight.melee_cooldown * .6:
-                self.knight.velocity = self.knight.target.position - self.knight.position
+                if self.knight.target is not None:
+                    self.knight.velocity = self.knight.target.position - self.knight.position
                 if self.knight.velocity.length() > 0:
                     self.knight.velocity.normalize_ip()
                     self.knight.velocity *= self.knight.maxSpeed
@@ -176,11 +170,11 @@ class KnightStateAttacking_TeamA(State):
             return None
         
         ### experimental ###
-        if (self.knight.position - self.knight.previously_visited_node.fromNode.position).length() < 8:
-            # align knight to node direction
-            if self.current_connection > 0:
-                self.current_connection -= 1
-                self.knight.previously_visited_node = self.path[self.current_connection]
+        if (self.knight.position - self.knight.move_target.position).length() < 8:
+            #continue on path, and track the latest node passed
+            if self.current_connection < self.path_length:
+                self.knight.move_target.position = self.path[self.current_connection].toNode.position
+                self.current_connection += 1
 
         # target is gone
         if self.knight.world.get(self.knight.target.id) is None or self.knight.target.ko:
@@ -208,15 +202,25 @@ class KnightStateAttacking_TeamA(State):
         return None
 
     def entry_actions(self):
-
-        if (self.knight.previously_visited_node is not None and self.knight.previously_visited_node.toNode is not None):
-            self.path = pathFindAStar(self.knight.path_graph, \
-                                  self.knight.previously_visited_node.fromNode, \
-                                  self.knight.path_graph.nodes[self.knight.base.spawn_node_index])
         
-        if self.path is not None:
-            self.current_connection = len(self.path)
-            
+        self.path = pathFindAStar(self.knight.path_graph, \
+                                    self.knight.path_graph.get_nearest_node(self.knight.position), \
+                                    self.knight.path_graph.nodes[self.knight.base.spawn_node_index])
+        
+        #self.path_to_enemy_spawn = pathFindAStar(self.knight.path_graph, \
+        #                            self.knight.path_graph.get_nearest_node(self.knight.position), \
+        #                            self.knight.path_graph.nodes[self.knight.base.target_node_index])
+
+        if self.path is None:
+            self.path_length = 0
+        else:
+            self.path_length = len(self.path)
+
+        if (self.path_length > 0):
+            self.current_connection = 0
+            self.knight.move_target.position = self.path[0].fromNode.position
+        else:
+            self.knight.move_target.position = self.knight.path_graph.nodes[self.knight.base.spawn_node_index].position
 
         return None
 
@@ -290,19 +294,16 @@ class KnightStateFleeing_TeamA(State):
         if (self.knight.position - self.knight.move_target.position).length() < 8:
             #continue on path, and track the latest node passed
             if self.current_connection < self.path_length:
-                self.knight.previously_visited_node = self.path[self.current_connection]
                 self.knight.move_target.position = self.path[self.current_connection].toNode.position
                 self.current_connection += 1
             
         return None
 
     def entry_actions(self):
-
         # generate path upon fleeing
-        if (self.knight.previously_visited_node is not None and self.knight.previously_visited_node.fromNode is not None):
-            self.path = pathFindAStar(self.knight.path_graph, \
-                                    self.knight.previously_visited_node.fromNode, \
-                                    self.knight.path_graph.nodes[self.knight.base.spawn_node_index])
+        self.path = pathFindAStar(self.knight.path_graph, \
+                                self.knight.path_graph.get_nearest_node(self.knight.position), \
+                                self.knight.path_graph.nodes[self.knight.base.spawn_node_index])
 
         if self.path is None:
             self.path_length = 0

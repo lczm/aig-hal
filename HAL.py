@@ -36,6 +36,7 @@ class World(object):
 
         self.graph = Graph(self)
         self.generate_pathfinding_graphs("pathfinding_graph.txt")
+        #self.generate_pathfinding_graphs("more_pathfinding_nodes.txt") #use this if you wanna try with the extended nodes
         self.scores = [0, 0]
 
         self.countdown_timer = TIME_LIMIT
