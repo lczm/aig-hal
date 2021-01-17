@@ -1,6 +1,6 @@
 DEBUG = True
 SHOW_PATHS = True
-SHOW_SPLASH = True
+SHOW_SPLASH = False
 SPEED_MULTIPLIER = 2.0
 
 RED_MULTIPLIER = 1.0       # Set this to 1.0 for Easy Mode

@@ -285,6 +285,10 @@ class ArcherStateAttacking_TeamA(State):
         nearest_opponent = self.archer.world.get_nearest_opponent(self.archer)
         if nearest_opponent is not None:
             if (self.archer.position - nearest_opponent.position).length() <= self.archer.min_target_distance:
+                # If on kiting path, set back to normal path
+                if self.archer.on_base_kiting_path:
+                    self.archer.path = get_path_to_enemy_base_from_my_base(self.archer, self.archer.path_graph)
+                # Set the target for the archer
                 self.archer.target = nearest_opponent
 
         opponent_distance = (
@@ -404,14 +408,15 @@ class ArcherStateFleeing_TeamA(State):
         # if self.archer.at_start_of_connection() and self.archer.at_node():
         #     self.archer.decrement_connection
 
-        if self.archer.on_base_kiting_path:
-            if self.archer.connection_not_at_end() and self.archer.at_node():
-                self.archer.increment_connection()
-            self.archer.set_move_target_to_node()
-        else:
-            if self.archer.connection_not_at_start() and self.archer.at_node(): 
-                self.archer.decrement_connection()
-            self.archer.set_move_target_from_node()
+        # if self.archer.on_base_kiting_path:
+        #     if self.archer.connection_not_at_end() and self.archer.at_node():
+        #         self.archer.increment_connection()
+        #     self.archer.set_move_target_to_node()
+        # else:
+
+        if self.archer.connection_not_at_start() and self.archer.at_node(): 
+            self.archer.decrement_connection()
+        self.archer.set_move_target_from_node()
 
         self.archer.set_velocity()
         if self.archer.velocity.length() > 0:
@@ -457,17 +462,16 @@ class ArcherRepositionState_TeamA(State):
                 self.archer.target = nearest_opponent
                 return "attacking"
 
+        # If at the start of the path, get a new path and go back to seeking
         if self.archer.at_start_of_connection() and self.archer.at_node():
             self.archer.path_graph = get_graph(self.archer, self.archer.path_graph, self.archer.max_lane)
             self.archer.path = get_path_to_enemy_base(self.archer, self.archer.path_graph, self.archer.position)
-            print("Setting self.archer.path to get_enemy_base L:443")
             return "seeking"
 
-        if self.archer.at_node():
-            # continue on path
-            if self.archer.connection_not_at_start():
-                self.archer.decrement_connection()
-                self.archer.set_move_target_from_node()
+        # otherwise, continue on path
+        if self.archer.connection_not_at_start() and self.archer.at_node():
+            self.archer.decrement_connection()
+            self.archer.set_move_target_from_node()
         return None
 
     def entry_actions(self) -> None:
