@@ -159,8 +159,16 @@ class Archer_TeamA(Character):
             return True
         return False
     
-    def render(self, surface):
+    def render(self, surface) -> None:
         Character.render(self, surface)
+
+        from_position: Vector2 = self.path[self.current_connection].fromNode.position
+        to_position: Vector2 = self.path[self.current_connection].toNode.position
+
+        draw_circle_at_position(from_position, surface, (0, 255, 0))
+        draw_circle_at_position(to_position, surface, (255, 0, 0))
+
+        return None
 
     def process(self, time_passed) -> None:
         Character.process(self, time_passed)
@@ -175,7 +183,7 @@ class Archer_TeamA(Character):
         ]
 
         if self.can_level_up():
-            if self.levels < 2:
+            if self.levels < 3:
                 self.level_up("speed")
             else:
                 self.level_up("ranged damage")
