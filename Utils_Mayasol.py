@@ -1,5 +1,5 @@
 import enum
-from typing import List, Dict
+from typing import List, Dict, Tuple
 from pygame.math import *
 
 from Graph import *
@@ -92,6 +92,15 @@ def get_path_to_enemy_base(person: Character, path_graph: Graph, position: Vecto
         path_graph.get_nearest_node(position),
         get_node_from_id(person.world.paths, person.base.target_node_index)
     )
+
+
+def get_path_to_enemy_base_from_my_base(person: Character, path_graph: Graph) -> List[Connection]:
+    return pathFindAStar(
+        path_graph,
+        get_initial_start_node(person),
+        get_node_from_id(person.world.paths, person.base.target_node_index)
+    )
+
 
 # def get_path_to_my_base(person: Character, path_graph: Graph, position: Vector2) -> List[NodeRecord]:
 #     return pathFindAStar(
@@ -205,3 +214,10 @@ def get_enemies_positions_in_lanes(
         enemy_positions_in_lane[get_lane(node_id)] += 1
 
     return enemy_positions_in_lane
+
+
+# Debug function to see where the character is going from/to
+def draw_circle_at_position(position: Vector2, surface: pygame.Surface,
+                            color: Tuple[int] = (255, 0, 0)) -> None:
+    pygame.draw.circle(surface, color, position, 15)
+    return None
