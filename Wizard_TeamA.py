@@ -30,6 +30,8 @@ class Wizard_TeamA(Character):
         ]
         self.path: List[Connection] = get_path_to_enemy_base(
             self, self.path_graph, self.position)
+        self.supporting_knight: bool = True
+        self.safe_distance: int = 250
 
         self.maxSpeed: int = 50
         self.min_target_distance: int = 100
@@ -131,6 +133,28 @@ class Wizard_TeamA(Character):
             (self.target.velocity * projectile_explode_time)
         return predicted_point
 
+    def grouped_with_knight(self) -> bool:
+        knight_lane: Lane
+        entity: Character
+
+        # check knight's lane
+        for entity in self.world.entities.values():
+            if entity.team_id != self.team_id:
+                continue
+            if entity.name != "knight":
+                continue
+            if entity.ko:
+                continue
+
+            knight_lane = get_lane_character(entity.path_graph, entity)
+            wizard_lane = get_lane_character(
+                self.path_graph, self)
+
+            if (knight_lane == wizard_lane):
+                return True
+
+        return False
+
     def find_knight_lane_graph(self) -> Graph:
         knight_lane: Lane
         entity: Character
@@ -202,6 +226,14 @@ class WizardStateSeeking_TeamA(State):
             if opponent_distance <= self.wizard.min_target_distance:
                 self.wizard.target = nearest_opponent
                 return "attacking"
+
+        # group up with knight if not already grouped
+        # if not self.wizard.grouped_with_knight():
+        #    print("not grouped with knight")
+        #    self.wizard.path_graph = self.wizard.find_knight_lane_graph()
+        #    self.wizard.path = get_path_to_enemy_base(
+        #        self.wizard, self.wizard.path_graph, self.wizard.position)
+        #    self.wizard.current_connection = 0
 
         if (self.wizard.position - self.wizard.move_target.position).length() < 8:
 
@@ -336,6 +368,14 @@ class WizardStateFleeing_TeamA(State):
     def check_conditions(self) -> str:
         if self.wizard.current_hp > (self.wizard.max_hp / 100 * 70):
             return "seeking"
+
+        # check if any opponent in the safe distance
+        nearest_opponent = self.wizard.world.get_nearest_opponent(self.wizard)
+        if nearest_opponent is not None:
+            opponent_distance = (self.wizard.position -
+                                 nearest_opponent.position).length()
+            if opponent_distance >= self.wizard.safe_distance:
+                return "seeking"
 
         if not self.wizard.can_heal() and self.wizard.has_target():
             return "attacking"
