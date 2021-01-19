@@ -58,11 +58,13 @@ class Archer_TeamA(Character):
         self.brain.set_state("seeking")
 
     def get_path_base_kite_left(self) -> List[Connection]:
-        connections = generate_series_of_connections(self, [6, 5, get_initial_start_node(self).id])
+        connections = generate_series_of_connections(self, [6, 24, 23, 22, 5, 
+                                                     get_initial_start_node(self).id])
         return connections
 
     def get_path_base_kite_right(self) -> List[Connection]:
-        connections = generate_series_of_connections(self, [2, 1, get_initial_start_node(self).id])
+        connections = generate_series_of_connections(self, [2, 17, 16, 15, 14, 1,
+                                                     get_initial_start_node(self).id])
         return connections
 
     def set_move_target_from_node(self) -> None:
@@ -206,10 +208,7 @@ class ArcherStateSeeking_TeamA(State):
 
         if (self.archer.on_base_kiting_path is False and
             (self.archer.position - self.archer.base.position).length() > 500):
-
-            highest_threat_lane = get_highest_lane_threat(self.archer.world.paths, self.archer)
-
-            # enemy_lanes: Dict[int, int] = get_enemies_positions_in_lanes(self.archer.world.paths, self.archer)
+            highest_threat_lane = get_highest_lane_threat(self.archer.paths, self.archer)
             current_lane: Lane = get_lane_character(self.archer.path_graph, self.archer)
 
             if current_lane != highest_threat_lane:
@@ -264,6 +263,7 @@ class ArcherStateAttacking_TeamA(State):
                 if nearest_opponent != self.archer.target and self.archer.on_base_kiting_path:
                     self.archer.path = get_path_to_enemy_base_from_my_base(self.archer, self.archer.path_graph)
                     self.archer.current_connection = 0
+                    self.archer.on_base_kiting_path = False
                 # Set the target for the archer
                 self.archer.target = nearest_opponent
 
@@ -469,8 +469,11 @@ class ArcherStateKO_TeamA(State):
         if self.archer.current_respawn_time <= 0:
             self.archer.current_respawn_time = self.archer.respawn_time
             self.archer.ko = False
-            self.archer.path_graph = self.archer.world.paths[
-                randint(0, len(self.archer.world.paths) - 1)
+            # self.archer.path_graph = self.archer.world.paths[
+            #     randint(0, len(self.archer.world.paths) - 1)
+            # ]
+            self.archer.path_graph = self.archer.paths[
+                randint(0, len(self.archer.paths) - 1)
             ]
             self.archer.path: List[Connection] = get_path_to_enemy_base(self.archer, self.archer.path_graph, self.archer.position)
             self.archer.current_connection = 0

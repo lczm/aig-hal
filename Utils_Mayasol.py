@@ -295,13 +295,6 @@ def get_highest_lane_threat(
     return highest_lane
     
 
-# Debug function to see where the character is going from/to
-def draw_circle_at_position(position: Vector2, surface: pygame.Surface,
-                            color: Tuple[int] = (255, 0, 0)) -> None:
-    pygame.draw.circle(surface, color, position, 15)
-    return None
-
-
 def generate_pathfinding_graphs(
     filename: str, person: Character
 ) -> List[Graph]:
@@ -364,3 +357,10 @@ def generate_series_of_connections(person: Character, node_ids: List[int]) -> Li
         ))
 
     return connections
+
+
+# Debug function to see where the character is going from/to
+def draw_circle_at_position(position: Vector2, surface: pygame.Surface,
+                            color: Tuple[int] = (255, 0, 0)) -> None:
+    pygame.draw.circle(surface, color, position, 15)
+    return None
