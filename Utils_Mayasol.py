@@ -351,3 +351,16 @@ def generate_pathfinding_graphs(
         line = file.readline()
     
     return paths
+
+
+def generate_series_of_connections(person: Character, node_ids: List[int]) -> List[Connection]:
+    connections: List[Connection] = []
+
+    for i in range(len(node_ids) - 1):
+        connections.append(Connection(
+            graph=person.path_graph, cost=0, 
+            fromNode=get_node_from_id(person.paths, node_ids[i]),
+            toNode=get_node_from_id(person.paths, node_ids[i+1])
+        ))
+
+    return connections

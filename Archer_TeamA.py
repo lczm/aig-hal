@@ -58,31 +58,11 @@ class Archer_TeamA(Character):
         self.brain.set_state("seeking")
 
     def get_path_base_kite_left(self) -> List[Connection]:
-        connections: List[Connection] = []
-
-        # furthest node, because when attacking, archer kites backwards
-        startNode: Node = get_node_from_id(self.world.paths, 6)
-        endNode: Node = get_node_from_id(self.world.paths, 5)
-        connections.append(Connection(graph=self.path_graph, cost=0, fromNode=startNode, toNode=endNode))
-
-        startNode = endNode
-        endNode: Node = get_initial_start_node(self)
-        connections.append(Connection(graph=self.path_graph, cost=0, fromNode=startNode, toNode=endNode))
-
+        connections = generate_series_of_connections(self, [6, 5, get_initial_start_node(self).id])
         return connections
 
     def get_path_base_kite_right(self) -> List[Connection]:
-        connections: List[Connection] = []
-
-        # furthest node, because when attacking, archer kites backwards
-        startNode: Node = get_node_from_id(self.world.paths, 2)
-        endNode: Node = get_node_from_id(self.world.paths, 1)
-        connections.append(Connection(graph=self.path_graph, cost=0, fromNode=startNode, toNode=endNode))
-
-        startNode = endNode
-        endNode: Node = get_initial_start_node(self)
-        connections.append(Connection(graph=self.path_graph, cost=0, fromNode=startNode, toNode=endNode))
-
+        connections = generate_series_of_connections(self, [2, 1, get_initial_start_node(self).id])
         return connections
 
     def set_move_target_from_node(self) -> None:
@@ -189,8 +169,10 @@ class Archer_TeamA(Character):
             if self.levels < 3:
                 self.level_up("speed")
             else:
-                self.level_up("ranged damage")
-                # self.level_up("ranged cooldown")
+                if self.levels % 2 == 0:
+                    self.level_up("ranged damage")
+                else:
+                    self.level_up("ranged cooldown")
             self.levels += 1
 
 
@@ -233,19 +215,6 @@ class ArcherStateSeeking_TeamA(State):
             if current_lane != highest_threat_lane:
                 self.archer.max_lane = highest_threat_lane
                 return "reposition"
-
-            # if current_lane != Lane.Base:
-            #     max_enemies:int = 0
-            #     max_lane:Lane = 0
-            #     for key, value in enemy_lanes.items():
-            #         if value > max_enemies:
-            #             max_enemies = value
-            #             max_lane = key
-
-            #     # If currently not at the lane with the most enemies
-            #     if current_lane != max_lane:
-            #         self.archer.max_lane = max_lane
-            #         return "reposition"
 
         # check if opponent is in range
         nearest_opponent = self.archer.world.get_nearest_opponent(self.archer)
@@ -503,6 +472,8 @@ class ArcherStateKO_TeamA(State):
             self.archer.path_graph = self.archer.world.paths[
                 randint(0, len(self.archer.world.paths) - 1)
             ]
+            self.archer.path: List[Connection] = get_path_to_enemy_base(self.archer, self.archer.path_graph, self.archer.position)
+            self.archer.current_connection = 0
             return "seeking"
         return None
 
@@ -511,5 +482,4 @@ class ArcherStateKO_TeamA(State):
         self.archer.position = Vector2(self.archer.base.spawn_position)
         self.archer.velocity = Vector2(0, 0)
         self.archer.target = None
-        self.archer.current_connection = 0
         return None
