@@ -11,6 +11,13 @@ BOT_PATH = 1
 MID_TOP_PATH = 2
 MID_BOT_PATH = 3
 
+MAIN_CHARACTER_SCORE: int = 4
+CHARACTER_SCORING: Dict[str, int] = {
+    "knight": MAIN_CHARACTER_SCORE,
+    "archer": MAIN_CHARACTER_SCORE,
+    "wizard": MAIN_CHARACTER_SCORE,
+    "orc": 1,
+}
 
 class Lane(enum.Enum):
     Top = 1
@@ -20,6 +27,8 @@ class Lane(enum.Enum):
 
 # TODO : Mid lanes can be split into mid-left, mid-right?
 
+def get_character_score(person: Character) -> int:
+    return CHARACTER_SCORING.get(person.name, 1)
 
 def get_lane(node_id: int) -> Lane:
     top_lanes = [2, 3, 4]
@@ -150,7 +159,6 @@ def get_nearest_projectile(person: Character) -> GameEntity:
     distance = 0.
 
     for entity in person.world.entities.values():
-
         # neutral entity
         if entity.team_id == 2:
             continue
@@ -214,6 +222,51 @@ def get_enemies_positions_in_lanes(
         enemy_positions_in_lane[get_lane(node_id)] += 1
 
     return enemy_positions_in_lane
+
+
+def get_relative_lane_threat(
+    paths: List[Graph], person: Character
+) -> Dict[Lane, int]:
+    my_positions_in_lane: Dict[Lane, int] = {}
+    enemy_positions_in_lane: Dict[Lane, int] = {}
+
+    # Set every lane to 0 threat
+    for lane in Lane:
+        my_positions_in_lane[lane] = 0
+        enemy_positions_in_lane[lane] = 0
+
+    entity: Character
+    for entity in person.world.entities.values():
+        # neutral entity
+        if entity.team_id == 2:
+            continue
+        # projectiles and explosions can be ignored
+        if entity.name == "projectile" or entity.name == "explosion":
+            continue
+        # ko-ed can be ignored
+        if entity.ko:
+            continue
+        # bases and towers can be ignored
+        if entity.name == "base" or entity.name == "tower":
+            continue
+            
+        # there is an entity, it is either my team or the opponent's
+        # get closest node for this entity
+        node: Node = get_nearest_node_global(paths, entity.position)
+        lane: Lane = get_lane(node.id)
+
+        # my team
+        if entity.team_id == person.team_id:
+            my_positions_in_lane[lane] += get_character_score(entity)
+        else:
+            enemy_positions_in_lane[lane] += get_character_score(entity)
+
+    # Get the difference between the node
+    relative_threat: Dict[Lane, int] = {}
+    for lane in Lane:
+        relative_threat = my_positions_in_lane[lane] - enemy_positions_in_lane[lane]
+
+    return relative_threat
 
 
 # Debug function to see where the character is going from/to
