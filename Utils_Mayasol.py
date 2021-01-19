@@ -264,10 +264,30 @@ def get_relative_lane_threat(
     # Get the difference between the node
     relative_threat: Dict[Lane, int] = {}
     for lane in Lane:
-        relative_threat = my_positions_in_lane[lane] - enemy_positions_in_lane[lane]
+        relative_threat[lane] = my_positions_in_lane[lane] - enemy_positions_in_lane[lane]
 
     return relative_threat
 
+
+def get_highest_lane_threat(
+    paths: List[Graph], person: Character
+) -> Lane:
+    relative_threat: Dict[Lane, int] = get_relative_lane_threat(paths, person)
+
+    highest_lane: Lane = None
+    highest_threat = 0
+
+    for lane in Lane:
+        threat = relative_threat[lane]
+        if threat > highest_threat:
+            highest_lane = lane
+            highest_threat = threat
+
+    print(relative_threat)
+    print("Highest : ", highest_lane, highest_threat)
+    
+    return highest_lane
+    
 
 # Debug function to see where the character is going from/to
 def draw_circle_at_position(position: Vector2, surface: pygame.Surface,

@@ -226,21 +226,28 @@ class ArcherStateSeeking_TeamA(State):
 
         if (self.archer.on_base_kiting_path is False and
             (self.archer.position - self.archer.base.position).length() > 500):
-            enemy_lanes: Dict[int, int] = get_enemies_positions_in_lanes(self.archer.world.paths, self.archer)
+
+            highest_threat_lane = get_highest_lane_threat(self.archer.world.paths, self.archer)
+
+            # enemy_lanes: Dict[int, int] = get_enemies_positions_in_lanes(self.archer.world.paths, self.archer)
             current_lane: Lane = get_lane_character(self.archer.path_graph, self.archer)
 
-            if current_lane != Lane.Base:
-                max_enemies:int = 0
-                max_lane:Lane = 0
-                for key, value in enemy_lanes.items():
-                    if value > max_enemies:
-                        max_enemies = value
-                        max_lane = key
+            if current_lane != highest_threat_lane:
+                self.archer.max_lane = highest_threat_lane
+                return "reposition"
 
-                # If currently not at the lane with the most enemies
-                if current_lane != max_lane:
-                    self.archer.max_lane = max_lane
-                    return "reposition"
+            # if current_lane != Lane.Base:
+            #     max_enemies:int = 0
+            #     max_lane:Lane = 0
+            #     for key, value in enemy_lanes.items():
+            #         if value > max_enemies:
+            #             max_enemies = value
+            #             max_lane = key
+
+            #     # If currently not at the lane with the most enemies
+            #     if current_lane != max_lane:
+            #         self.archer.max_lane = max_lane
+            #         return "reposition"
 
         # check if opponent is in range
         nearest_opponent = self.archer.world.get_nearest_opponent(self.archer)
