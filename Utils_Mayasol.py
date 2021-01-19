@@ -31,9 +31,9 @@ def get_character_score(person: Character) -> int:
     return CHARACTER_SCORING.get(person.name, 1)
 
 def get_lane(node_id: int) -> Lane:
-    top_lanes = [2, 3, 4]
+    top_lanes = [2, 3, 4, 14, 15, 16, 17, 18, 19, 20, 21]
     mid_lanes = [8, 9, 10, 11, 12, 13]
-    bot_lanes = [5, 6, 7]
+    bot_lanes = [5, 6, 7, 22, 23, 24, 25, 26, 27, 28]
 
     if node_id in top_lanes:
         return Lane.Top
@@ -255,6 +255,10 @@ def get_relative_lane_threat(
         node: Node = get_nearest_node_global(paths, entity.position)
         lane: Lane = get_lane(node.id)
 
+        # If entity is at lane, ignore
+        if lane == Lane.Base:
+            continue
+
         # my team
         if entity.team_id == person.team_id:
             my_positions_in_lane[lane] += get_character_score(entity)
@@ -275,11 +279,13 @@ def get_highest_lane_threat(
     relative_threat: Dict[Lane, int] = get_relative_lane_threat(paths, person)
 
     highest_lane: Lane = None
-    highest_threat = 0
+    # 'Highest' because it should also be negative threat is 
+    # most dangerous, my team (threat) - opponent team (threat)
+    highest_threat = inf 
 
     for lane in Lane:
         threat = relative_threat[lane]
-        if threat > highest_threat:
+        if threat < highest_threat:
             highest_lane = lane
             highest_threat = threat
 
