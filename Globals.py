@@ -3,7 +3,7 @@ SHOW_PATHS = True
 SHOW_SPLASH = False
 SPEED_MULTIPLIER = 2.0
 
-RED_MULTIPLIER = 1.0       # Set this to 1.0 for Easy Mode
+RED_MULTIPLIER = 1.15       # Set this to 1.0 for Easy Mode
                             # Set this to 1.15 for Hard Mode
 
 SCREEN_WIDTH = 1024

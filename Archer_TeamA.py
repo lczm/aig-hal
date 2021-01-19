@@ -285,9 +285,11 @@ class ArcherStateAttacking_TeamA(State):
         nearest_opponent = self.archer.world.get_nearest_opponent(self.archer)
         if nearest_opponent is not None:
             if (self.archer.position - nearest_opponent.position).length() <= self.archer.min_target_distance:
+                # If the new opponent found is not the same and 
                 # If on kiting path, set back to normal path
-                if self.archer.on_base_kiting_path:
+                if nearest_opponent != self.archer.target and self.archer.on_base_kiting_path:
                     self.archer.path = get_path_to_enemy_base_from_my_base(self.archer, self.archer.path_graph)
+                    self.archer.current_connection = 0
                 # Set the target for the archer
                 self.archer.target = nearest_opponent
 
