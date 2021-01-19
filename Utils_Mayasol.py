@@ -294,3 +294,54 @@ def draw_circle_at_position(position: Vector2, surface: pygame.Surface,
                             color: Tuple[int] = (255, 0, 0)) -> None:
     pygame.draw.circle(surface, color, position, 15)
     return None
+
+
+def generate_pathfinding_graphs(
+    filename: str, person: Character
+) -> List[Graph]:
+
+    graph: Graph = Graph(person.world)
+    file = open(filename, "r")
+
+    # Create the nodes
+    line = file.readline()
+    while line != "connections\n":
+        data = line.split()
+        graph.nodes[int(data[0])] = Node(graph, int(data[0]), int(data[1]), int(data[2]))
+        line = file.readline()
+    
+    # Create the connections
+    line = file.readline()
+    while line != "paths\n":
+        data = line.split()
+        node0 = int(data[0])
+        node1 = int(data[1])
+        distance = (Vector2(graph.nodes[node0].position) - Vector2(graph.nodes[node1].position)).length()
+        graph.nodes[node0].addConnection(graph.nodes[node1], distance)
+        graph.nodes[node1].addConnection(graph.nodes[node0], distance)
+        line = file.readline()
+    
+    # Create the paths
+    paths = []
+    line = file.readline()
+    while line != "":
+        path = Graph(person.world)
+        data = line.split()
+        
+        # Create the nodes
+        for i in range(0, len(data)):
+            node = graph.nodes[int(data[i])]
+            path.nodes[int(data[i])] = Node(path, int(data[i]), node.position[0], node.position[1])
+
+        # Create the connections
+        for i in range(0, len(data)-1):
+            node0 = int(data[i])
+            node1 = int(data[i + 1])
+            distance = (Vector2(graph.nodes[node0].position) - Vector2(graph.nodes[node1].position)).length()
+            path.nodes[node0].addConnection(path.nodes[node1], distance)
+            path.nodes[node1].addConnection(path.nodes[node0], distance)
+            
+        paths.append(path)
+        line = file.readline()
+    
+    return paths

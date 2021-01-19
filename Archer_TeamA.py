@@ -31,14 +31,12 @@ class Archer_TeamA(Character):
 
         self.max_lane: Lane = 0
 
-        self.path_graph: Graph = self.world.paths[
-            randint(0, len(self.world.paths) - 1)
-        ]
-        # self.path: List[NodeRecord] = pathFindAStar(
-        #     self.path_graph,
-        #     self.path_graph.get_nearest_node(self.position),
-        #     self.path_graph.nodes[self.base.target_node_index],
-        # )
+        self.paths: List[Graph] = generate_pathfinding_graphs("more_pathfinding_nodes.txt", self)
+        self.path_graph: Graph = self.paths[0]
+        # self.path_graph: Graph = self.world.paths[
+        #     randint(0, len(self.world.paths) - 1)
+        # ]
+
         self.path: List[Connection] = get_path_to_enemy_base(self, self.path_graph, self.position)
 
         self.on_base_kiting_path: bool = False
