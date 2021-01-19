@@ -207,7 +207,7 @@ class ArcherStateSeeking_TeamA(State):
             return "fleeing"
 
         if (self.archer.on_base_kiting_path is False and
-            (self.archer.position - self.archer.base.position).length() > 500):
+            (self.archer.position - self.archer.base.position).length() > 400):
             highest_threat_lane = get_highest_lane_threat(self.archer.paths, self.archer)
             current_lane: Lane = get_lane_character(self.archer.path_graph, self.archer)
 
