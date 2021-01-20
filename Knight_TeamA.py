@@ -93,11 +93,14 @@ class KnightStateSeeking_TeamA(State):
             self.knight.velocity.normalize_ip()
             self.knight.velocity *= self.knight.maxSpeed
 
-
     def check_conditions(self):
 
-        # heal if knight is not full HP when seeking
-        if (self.knight.current_hp < self.knight.max_hp):
+        #TO-DO
+        #if self.knight.base.current_hp < self.knight.base.max_hp * 0.65 and enemy pushing together in a lane:
+        #    return "fleeing"
+
+        # heal if knight HP is below 90% when seeking
+        if (self.knight.current_hp <= self.knight.max_hp * 0.9):
             self.knight.heal()
 
         # check if opponent is in range
@@ -128,10 +131,10 @@ class KnightStateSeeking_TeamA(State):
         else:
             self.path_length = len(self.path)
 
-        if (self.path_length > 0):
-            self.current_connection = 0
-            self.knight.move_target.position = self.path[0].fromNode.position
+        self.current_connection = 0
 
+        if (self.path_length > 0):
+            self.knight.move_target.position = self.path[0].fromNode.position
         else:
             self.knight.move_target.position = self.knight.path_graph.nodes[self.knight.base.target_node_index].position
 
@@ -216,8 +219,9 @@ class KnightStateAttacking_TeamA(State):
         else:
             self.path_length = len(self.path)
 
+        self.current_connection = 0
+
         if (self.path_length > 0):
-            self.current_connection = 0
             self.knight.move_target.position = self.path[0].fromNode.position
         else:
             self.knight.move_target.position = self.knight.path_graph.nodes[self.knight.base.spawn_node_index].position
@@ -274,6 +278,11 @@ class KnightStateFleeing_TeamA(State):
         self.knight.heal() #heal while fleeing
 
     def check_conditions(self):
+
+        # TO-DO
+        #defend the base when 3 enemy characters are pushing in the same lane and base hp < 65%
+        # if self.knight.base.current_hp < self.knight.base.max_hp * 0.65 and \
+        #   return
         
         #goes back to seeking state if knight has nearby ranged ally
         nearest_ally = self.knight.get_nearest_ranged_ally()
@@ -310,28 +319,11 @@ class KnightStateFleeing_TeamA(State):
         else:
             self.path_length = len(self.path)
 
+        self.current_connection = 0
+
         if (self.path_length > 0):
-            self.current_connection = 0
             self.knight.move_target.position = self.path[0].fromNode.position
         else:
             self.knight.move_target.position = self.knight.path_graph.nodes[self.knight.base.spawn_node_index].position
-
-        '''nearest_node = self.knight.path_graph.get_nearest_node(self.knight.position)
-            further_node_index = list(self.knight.path_graph.nodes.values()).index(nearest_node)
-            #take the node that's directly "behind" the further node to fall back
-            nearest_node = list(self.knight.path_graph.nodes.values())[further_node_index - 1]
-
-        self.path = pathFindAStar(self.knight.path_graph, \
-                                  nearest_node, \
-                                  self.knight.path_graph.nodes[self.knight.base.spawn_node_index])
-
-        self.path_length = len(self.path)
-
-        if (self.path_length > 0):
-            self.current_connection = 0
-            self.knight.move_target.position = self.path[0].fromNode.position
-
-        else:
-            self.knight.move_target.position = self.knight.path_graph.nodes[self.knight.base.spawn_node_index].position'''
 
         return None
