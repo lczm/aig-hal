@@ -369,8 +369,8 @@ class ArcherStateAttacking_TeamA(State):
         opponent_distance = (
             self.archer.position - self.archer.target.position
         ).length()
-        if opponent_distance > 200:
-            self.archer.path = get_path_to_enemy_base(self.archer, self.archer.path_graph, self.archer.position)
+        if opponent_distance > 200 and not self.archer.on_base_kiting_path:
+            # self.archer.path = get_path_to_enemy_base(self.archer, self.archer.path_graph, self.archer.position)
             print("Setting self.archer.path to get_path_enemy_base()")
             return "seeking"
 
