@@ -143,6 +143,12 @@ class Archer_TeamA(Character):
         if self.target is not None:
             return True
         return False
+
+    def predict_target_location(self) -> Vector2:
+        distance_from_target: Vector2 = self.position - self.target.position
+        projectile_time: float = distance_from_target.length() / self.projectile_speed
+        predicted_point: Vector2 = self.target.position + (self.target.velocity * projectile_time)
+        return predicted_point
     
     def render(self, surface) -> None:
         Character.render(self, surface)
@@ -305,7 +311,8 @@ class ArcherStateAttacking_TeamA(State):
         if self.archer.can_attack():
             if self.archer.within_attack_range(opponent_distance):
                 self.archer.velocity = Vector2(0, 0)
-                self.archer.ranged_attack(self.archer.target.position)
+                # self.archer.ranged_attack(self.archer.target.position)
+                self.archer.ranged_attack(self.archer.predict_target_location())
 
                 if self.archer.at_node() and self.archer.connection_not_at_start(): 
                     self.archer.decrement_connection()
