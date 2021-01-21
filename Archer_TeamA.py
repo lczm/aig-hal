@@ -174,13 +174,18 @@ class Archer_TeamA(Character):
         ]
 
         if self.can_level_up():
-            if self.levels < 3:
+            if self.levels < 1:
                 self.level_up("speed")
             else:
-                if self.levels % 2 == 0:
-                    self.level_up("ranged damage")
-                else:
-                    self.level_up("ranged cooldown")
+                self.level_up("ranged cooldown")
+            # if self.levels < 3:
+            #     self.level_up("speed")
+            # else:
+            #     self.level_up("ranged cooldown")
+                # if self.levels % 2 == 0:
+                #     self.level_up("ranged damage")
+                # else:
+                #     self.level_up("ranged cooldown")
             self.levels += 1
 
 
