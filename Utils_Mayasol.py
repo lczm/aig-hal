@@ -19,6 +19,7 @@ CHARACTER_SCORING: Dict[str, int] = {
     "orc": 1,
 }
 
+
 class Lane(enum.Enum):
     Top = 1
     Mid = 2
@@ -27,8 +28,10 @@ class Lane(enum.Enum):
 
 # TODO : Mid lanes can be split into mid-left, mid-right?
 
+
 def get_character_score(person: Character) -> int:
     return CHARACTER_SCORING.get(person.name, 1)
+
 
 def get_lane(node_id: int) -> Lane:
     top_lanes = [2, 3, 4, 14, 15, 16, 17, 18, 19, 20, 21]
@@ -167,7 +170,7 @@ def get_nearest_projectile(person: Character) -> GameEntity:
         if entity.team_id == person.team_id:
             continue
 
-        if entity.name != "projectile" and entity.name != "explosion":
+        if entity.name != "projectile":
             continue
 
         if nearest_projectile is None:
@@ -249,7 +252,7 @@ def get_relative_lane_threat(
         # bases and towers can be ignored
         if entity.name == "base" or entity.name == "tower":
             continue
-            
+
         # there is an entity, it is either my team or the opponent's
         # get closest node for this entity
         node: Node = get_nearest_node_global(paths, entity.position)
@@ -268,7 +271,8 @@ def get_relative_lane_threat(
     # Get the difference between the node
     relative_threat: Dict[Lane, int] = {}
     for lane in Lane:
-        relative_threat[lane] = my_positions_in_lane[lane] - enemy_positions_in_lane[lane]
+        relative_threat[lane] = my_positions_in_lane[lane] - \
+            enemy_positions_in_lane[lane]
 
     return relative_threat
 
@@ -279,9 +283,9 @@ def get_highest_lane_threat(
     relative_threat: Dict[Lane, int] = get_relative_lane_threat(paths, person)
 
     highest_lane: Lane = None
-    # 'Highest' because it should also be negative threat is 
+    # 'Highest' because it should also be negative threat is
     # most dangerous, my team (threat) - opponent team (threat)
-    highest_threat = inf 
+    highest_threat = inf
 
     for lane in Lane:
         threat = relative_threat[lane]
@@ -291,9 +295,9 @@ def get_highest_lane_threat(
 
     print(relative_threat)
     print("Highest : ", highest_lane, highest_threat)
-    
+
     return highest_lane
-    
+
 
 def generate_pathfinding_graphs(
     filename: str, person: Character
@@ -306,43 +310,47 @@ def generate_pathfinding_graphs(
     line = file.readline()
     while line != "connections\n":
         data = line.split()
-        graph.nodes[int(data[0])] = Node(graph, int(data[0]), int(data[1]), int(data[2]))
+        graph.nodes[int(data[0])] = Node(
+            graph, int(data[0]), int(data[1]), int(data[2]))
         line = file.readline()
-    
+
     # Create the connections
     line = file.readline()
     while line != "paths\n":
         data = line.split()
         node0 = int(data[0])
         node1 = int(data[1])
-        distance = (Vector2(graph.nodes[node0].position) - Vector2(graph.nodes[node1].position)).length()
+        distance = (Vector2(graph.nodes[node0].position) -
+                    Vector2(graph.nodes[node1].position)).length()
         graph.nodes[node0].addConnection(graph.nodes[node1], distance)
         graph.nodes[node1].addConnection(graph.nodes[node0], distance)
         line = file.readline()
-    
+
     # Create the paths
     paths = []
     line = file.readline()
     while line != "":
         path = Graph(person.world)
         data = line.split()
-        
+
         # Create the nodes
         for i in range(0, len(data)):
             node = graph.nodes[int(data[i])]
-            path.nodes[int(data[i])] = Node(path, int(data[i]), node.position[0], node.position[1])
+            path.nodes[int(data[i])] = Node(path, int(data[i]),
+                                            node.position[0], node.position[1])
 
         # Create the connections
         for i in range(0, len(data)-1):
             node0 = int(data[i])
             node1 = int(data[i + 1])
-            distance = (Vector2(graph.nodes[node0].position) - Vector2(graph.nodes[node1].position)).length()
+            distance = (Vector2(
+                graph.nodes[node0].position) - Vector2(graph.nodes[node1].position)).length()
             path.nodes[node0].addConnection(path.nodes[node1], distance)
             path.nodes[node1].addConnection(path.nodes[node0], distance)
-            
+
         paths.append(path)
         line = file.readline()
-    
+
     return paths
 
 
@@ -351,7 +359,7 @@ def generate_series_of_connections(person: Character, node_ids: List[int]) -> Li
 
     for i in range(len(node_ids) - 1):
         connections.append(Connection(
-            graph=person.path_graph, cost=0, 
+            graph=person.path_graph, cost=0,
             fromNode=get_node_from_id(person.paths, node_ids[i]),
             toNode=get_node_from_id(person.paths, node_ids[i+1])
         ))

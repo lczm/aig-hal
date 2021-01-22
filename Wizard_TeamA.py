@@ -32,6 +32,7 @@ class Wizard_TeamA(Character):
             self, self.path_graph, self.position)
         self.supporting_knight: bool = True
         self.safe_distance: int = 250
+        self.time_passed: float = 0
 
         self.maxSpeed: int = 50
         self.min_target_distance: int = 100
@@ -176,6 +177,22 @@ class Wizard_TeamA(Character):
         # return a random graph if there is no knight
         return self.world.paths[randint(0, len(self.world.paths) - 1)]
 
+    def dodge_projectile(self):
+        nearest_projectile: GameEntity = get_nearest_projectile(self)
+        if nearest_projectile is not None:
+            distance_from_origin: Vector2 = nearest_projectile.position - \
+                nearest_projectile.origin_position
+            distance_until_despawn: float = nearest_projectile.max_range - \
+                distance_from_origin.length()
+            # normal projectile
+            if not nearest_projectile.explosive_image:
+                return
+            # explosive projectile
+            else:
+                point_of_explosion: Vector2 = nearest_projectile.position + \
+                    (nearest_projectile.velocity * distance_until_despawn)
+                return
+
     def render(self, surface):
 
         Character.render(self, surface)
@@ -183,6 +200,7 @@ class Wizard_TeamA(Character):
     def process(self, time_passed):
 
         Character.process(self, time_passed)
+        self.time_passed = time_passed
 
         level_up_stats: typing.List[str] = [
             "hp", "speed", "ranged damage", "ranged cooldown", "projectile range"]
@@ -299,7 +317,6 @@ class WizardStateAttacking_TeamA(State):
                 self.wizard.set_velocity()
             else:
                 if self.wizard.at_node() and self.wizard.connection_not_at_end():
-                    print("incrementing wizard connection")
                     self.wizard.increment_connection()
 
                 self.wizard.set_move_target_to_node()
@@ -320,6 +337,7 @@ class WizardStateAttacking_TeamA(State):
                 self.wizard.set_move_target_to_node()
 
             # dodge projectiles
+            self.wizard.dodge_projectile()
            # nearest_projectile = get_nearest_projectile(self.wizard)
            # if nearest_projectile is not None:
            #     projectile_distance = (self.wizard.position -
