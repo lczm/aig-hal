@@ -1,7 +1,7 @@
 import pygame
 
 from random import randint, random
-from typing import List, Dict
+from typing import List, Dict, Tuple
 from Graph import *
 from Base import *
 
@@ -31,13 +31,24 @@ class Archer_TeamA(Character):
 
         self.max_lane: Lane = 0
 
-        self.paths: List[Graph] = generate_pathfinding_graphs("more_pathfinding_nodes.txt", self)
+        self.paths: List[Graph]
+        self.global_graph: Graph
+        (self.paths, self.global_graph) = generate_pathfinding_graphs("more_pathfinding_nodes.txt", self)
         self.path_graph: Graph = self.paths[0]
         # self.path_graph: Graph = self.world.paths[
         #     randint(0, len(self.world.paths) - 1)
         # ]
 
         self.path: List[Connection] = get_path_to_enemy_base(self, self.path_graph, self.position)
+
+        # test
+        # get_path_from_base_to_position(self, self.path_graph)
+        # test = pathFindAStar(
+        #     self.path_graph,
+        #     # get_initial_start_node(self),
+        #     get_node_from_id(self.paths, 0),
+        #     get_node_from_id(self.paths, 5),
+        # )
 
         self.on_base_kiting_path: bool = False
         self.path_base_kite_left: List[Connection] = self.get_path_base_kite_left()
@@ -273,8 +284,14 @@ class ArcherStateAttacking_TeamA(State):
                 # If the new opponent found is not the same and 
                 # If on kiting path, set back to normal path
                 if nearest_opponent != self.archer.target and self.archer.on_base_kiting_path:
-                    self.archer.path = get_path_to_enemy_base_from_my_base(self.archer, self.archer.path_graph)
-                    self.archer.current_connection = 0
+                    # Use global_graph here because the paths might not be connected.
+                    # To connect the graph, use the global_graph where all the connections are there.
+
+                    # self.archer.path = get_path_to_enemy_base_from_my_base(self.archer, self.archer.path_graph)
+                    # self.archer.path = get_path_from_base_to_position(self.archer, self.archer.path_graph)
+                    self.archer.path = get_path_from_base_to_position(self.archer, self.archer.global_graph)
+                    # self.archer.current_connection = 0
+                    self.archer.current_connection = len(self.archer.path) - 1
                     self.archer.on_base_kiting_path = False
                 # Set the target for the archer
                 self.archer.target = nearest_opponent

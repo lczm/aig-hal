@@ -141,6 +141,20 @@ def get_path_to_enemy_base_from_my_base(person: Character, path_graph: Graph) ->
     )
 
 
+def get_path_from_base_to_position(person: Character, path_graph: Graph) -> List[Connection]:
+    paths: List[Graph]
+    if hasattr(person, "paths"):
+        paths = person.paths
+    else:
+        paths = person.world.paths
+
+    return pathFindAStar(
+        path_graph,
+        get_initial_start_node(person),
+        get_nearest_node_global_ignoring_base(paths, person.position)
+    )
+
+
 # def get_path_to_my_base(person: Character, path_graph: Graph, position: Vector2) -> List[NodeRecord]:
 #     return pathFindAStar(
 #         path_graph,
@@ -166,7 +180,7 @@ def get_nearest_node_local(graph: Graph, position: Vector2) -> Node:
 # The reason why this is needed is because the get_nearest_node() implemented
 # is a method, not a function, and it cannot be used without states
 def get_nearest_node_global(paths: List[Graph], position: Vector2) -> Node:
-    nearest = None
+    nearest: Node = None
     nearest_distance = inf
 
     # Typehints
@@ -180,9 +194,26 @@ def get_nearest_node_global(paths: List[Graph], position: Vector2) -> Node:
                 nearest = node
     return nearest
 
+
+def get_nearest_node_global_ignoring_base(paths: List[Graph], position:Vector2) -> Node:
+    nearest: Node = None
+    nearest_distance: float = inf
+
+    graph: Graph
+    node: Node
+    for graph in paths:
+        for node in graph.nodes.values():
+            if get_lane(node.id) == Lane.Base:
+                continue
+            distance = (position - Vector2(node.position)).length()
+            if distance < nearest_distance:
+                nearest_distance = distance
+                nearest = node
+
+    return nearest
+
+
 # just get nearest opponent but projectile
-
-
 def get_nearest_projectile(person: Character) -> GameEntity:
 
     nearest_projectile = None
@@ -328,7 +359,7 @@ def get_highest_lane_threat(
 
 def generate_pathfinding_graphs(
     filename: str, person: Character
-) -> List[Graph]:
+) -> Tuple[List[Graph], Graph]:
 
     graph: Graph = Graph(person.world)
     file = open(filename, "r")
@@ -378,7 +409,7 @@ def generate_pathfinding_graphs(
         paths.append(path)
         line = file.readline()
 
-    return paths
+    return paths, graph
 
 
 def generate_series_of_connections(person: Character, node_ids: List[int]) -> List[Connection]:
