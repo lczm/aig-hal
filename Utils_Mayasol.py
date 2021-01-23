@@ -126,7 +126,6 @@ def get_path_to_enemy_base(person: Character, path_graph: Graph, position: Vecto
         get_node_from_id(paths, person.base.target_node_index)
     )
 
-
 def get_path_to_enemy_base_from_my_base(person: Character, path_graph: Graph) -> List[Connection]:
     paths: List[Graph]
     if hasattr(person, "paths"):
@@ -140,6 +139,12 @@ def get_path_to_enemy_base_from_my_base(person: Character, path_graph: Graph) ->
         get_node_from_id(paths, person.base.target_node_index)
     )
 
+def get_path_to_my_base(person: Character, path_graph: Graph, position: Vector2) -> List[Connection]:
+    return pathFindAStar(
+        path_graph,
+        path_graph.get_nearest_node(position),
+        get_node_from_id(person.world.paths, person.base.spawn_node_index)
+    )
 
 def get_path_from_base_to_position(person: Character, path_graph: Graph) -> List[Connection]:
     paths: List[Graph]
