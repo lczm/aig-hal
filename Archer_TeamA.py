@@ -165,13 +165,13 @@ class Archer_TeamA(Character):
         Character.process(self, time_passed)
         self.time_passed = time_passed
 
-        level_up_stats: typing.List[str] = [
-            "hp",
-            "speed",
-            "ranged damage",
-            "ranged cooldown",
-            "projectile range",
-        ]
+        # level_up_stats: List[str] = [
+        #     "hp",
+        #     "speed",
+        #     "ranged damage",
+        #     "ranged cooldown",
+        #     "projectile range",
+        # ]
 
         if self.can_level_up():
             if self.levels < 1:
@@ -487,7 +487,7 @@ class ArcherStateKO_TeamA(State):
             self.archer.path_graph = self.archer.paths[
                 randint(0, len(self.archer.paths) - 1)
             ]
-            self.archer.path: List[Connection] = get_path_to_enemy_base(self.archer, self.archer.path_graph, self.archer.position)
+            self.archer.path = get_path_to_enemy_base(self.archer, self.archer.path_graph, self.archer.position)
             self.archer.current_connection = 0
             return "seeking"
         return None
