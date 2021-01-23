@@ -216,8 +216,12 @@ class ArcherStateSeeking_TeamA(State):
             get_amount_of_enemies_in_range(self.archer, self.archer.min_target_distance + 100) == 0):
             return "fleeing"
 
+        if (get_amount_of_enemies_in_range(self.archer.base, 300) > 0 and
+            (self.archer.base.position - self.archer.position).length() > 300):
+            return "reposition"
+
         if (self.archer.on_base_kiting_path is False and
-            (self.archer.position - self.archer.base.position).length() > 450):
+            (self.archer.position - self.archer.base.position).length() > 500):
             highest_threat_lane = get_highest_lane_threat(self.archer.paths, self.archer)
             current_lane: Lane = get_lane_character(self.archer.path_graph, self.archer)
 
@@ -362,7 +366,7 @@ class ArcherStateAttacking_TeamA(State):
         # if (self.archer.current_hp < (self.archer.max_hp / 100 * 50) and 
         if ((self.archer.current_hp != self.archer.max_hp) and
             self.archer.can_heal() and
-            (self.archer.base.position - self.archer.position).length() > 500):
+            get_amount_of_enemies_in_range(self.archer, self.archer.min_target_distance + 100) == 0):
             return "fleeing"
 
         # target is gone
@@ -379,7 +383,6 @@ class ArcherStateAttacking_TeamA(State):
         ).length()
         if opponent_distance > 200 and not self.archer.on_base_kiting_path:
             # self.archer.path = get_path_to_enemy_base(self.archer, self.archer.path_graph, self.archer.position)
-            print("Setting self.archer.path to get_path_enemy_base()")
             return "seeking"
 
         return None
@@ -410,7 +413,6 @@ class ArcherStateFleeing_TeamA(State):
 
         # Heal, it will check if it can heal
         self.archer.heal()
-        print("fleeing")
         return None
 
     def check_conditions(self) -> str:
@@ -438,7 +440,6 @@ class ArcherRepositionState_TeamA(State):
         if self.archer.velocity.length() > 0:
             self.archer.velocity.normalize_ip()
             self.archer.velocity *= self.archer.maxSpeed
-        print("repositioning")
         return None
 
     def check_conditions(self) -> str:
