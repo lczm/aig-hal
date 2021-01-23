@@ -57,6 +57,9 @@ def get_node_from_id(paths: List[Graph], node_id: int) -> Node:
 
 
 def get_initial_start_node(person: Character) -> Node:
+    # This does not need to use person.paths as the
+    # node ids are identical between the default path
+    # and the modified paths
     if person.team_id == 0:   # Blue team
         return get_node_from_id(person.world.paths, 0)
     elif person.team_id == 1:  # Red  team
@@ -83,33 +86,57 @@ def get_graph(person: Character, graph: Graph, lane: Lane) -> Graph:
 
 
 def get_top_graph(person: Character) -> Graph:
-    return person.world.paths[TOP_PATH]
+    if hasattr(person, "paths"): 
+        return person.paths[TOP_PATH]
+    else: 
+        return person.world.paths[TOP_PATH]
 
 
 def get_mid_top_graph(person: Character) -> Graph:
-    return person.world.paths[MID_TOP_PATH]
+    if hasattr(person, "paths"):
+        return person.paths[MID_TOP_PATH]
+    else:
+        return person.world.paths[MID_TOP_PATH]
 
 
 def get_mid_bot_graph(person: Character) -> Graph:
-    return person.world.paths[MID_BOT_PATH]
+    if hasattr(person, "paths"):
+        return person.paths[MID_BOT_PATH]
+    else:
+        return person.world.paths[MID_BOT_PATH]
 
 
 def get_bot_graph(person: Character) -> Graph:
-    return person.world.paths[BOT_PATH]
+    if hasattr(person, "paths"):
+        return person.paths[BOT_PATH]
+    else:
+        return person.world.paths[BOT_PATH]
 
 
 def get_path_to_enemy_base(person: Character, path_graph: Graph, position: Vector2) -> List[Connection]:
+    paths: List[Graph]
+    if hasattr(person, "paths"):
+        paths = person.paths
+    else:
+        paths = person.world.paths
+
     return pathFindAStar(
         path_graph,
         path_graph.get_nearest_node(position),
-        get_node_from_id(person.world.paths, person.base.target_node_index)
+        get_node_from_id(paths, person.base.target_node_index)
     )
 
 def get_path_to_enemy_base_from_my_base(person: Character, path_graph: Graph) -> List[Connection]:
+    paths: List[Graph]
+    if hasattr(person, "paths"):
+        paths = person.paths
+    else:
+        paths = person.world.paths
+
     return pathFindAStar(
         path_graph,
         get_initial_start_node(person),
-        get_node_from_id(person.world.paths, person.base.target_node_index)
+        get_node_from_id(paths, person.base.target_node_index)
     )
 
 def get_path_to_my_base(person: Character, path_graph: Graph, position: Vector2) -> List[Connection]:
@@ -362,14 +389,72 @@ def generate_pathfinding_graphs(
 def generate_series_of_connections(person: Character, node_ids: List[int]) -> List[Connection]:
     connections: List[Connection] = []
 
+    # Use path graph in the person if it exists
+    paths: List[Graph]
+    path_graph: Graph
+
+    if hasattr(person, "path_graph"):
+        path_graph = person.path_graph
+    else:
+        path_graph = person.world.path_graph
+    
+    if hasattr(person, "paths"):
+        paths = person.paths
+    else:
+        paths = person.world.paths
+
     for i in range(len(node_ids) - 1):
         connections.append(Connection(
-            graph=person.path_graph, cost=0,
-            fromNode=get_node_from_id(person.paths, node_ids[i]),
-            toNode=get_node_from_id(person.paths, node_ids[i+1])
+            graph=path_graph, cost=0,
+            fromNode=get_node_from_id(paths, node_ids[i]),
+            toNode=get_node_from_id(paths, node_ids[i+1])
         ))
 
     return connections
+
+
+# This gets an opponent that is within range while being relatively sane,
+# i.e. picks targets that are one shot away
+def get_opponent_in_range(person: Character) -> Character:
+    nearest_opponent: Character = None
+    distance: float = 0
+
+    range: float = person.min_target_distance
+    attack_damage: float = person.ranged_damage
+
+    entity: Character
+    for entity in person.world.entities.values():
+        # neutral entity
+        if entity.team_id == 2:
+            continue
+        # same team
+        if entity.team_id == person.team_id:
+            continue
+        # projectile or explosion
+        if entity.name == "projectile" or entity.name == "explosion":
+            continue
+        # dead
+        if entity.ko:
+            continue
+        
+        # Get the distance away from the entity
+        current_distance: float = (person.position - entity.position).length()
+
+        # If the entity is within attackable range
+        if current_distance <= range:
+            # If the entity is 1 shot away from dying, just select that.
+            if entity.current_hp <= attack_damage:
+                return entity
+            else:
+                if nearest_opponent is None:
+                    nearest_opponent = entity
+                    distance = current_distance
+                else:
+                    if distance > current_distance:
+                        distance = current_distance
+                        nearest_opponent = entity
+
+    return nearest_opponent
 
 
 # Debug function to see where the character is going from/to

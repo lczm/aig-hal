@@ -165,13 +165,13 @@ class Archer_TeamA(Character):
         Character.process(self, time_passed)
         self.time_passed = time_passed
 
-        level_up_stats: typing.List[str] = [
-            "hp",
-            "speed",
-            "ranged damage",
-            "ranged cooldown",
-            "projectile range",
-        ]
+        # level_up_stats: List[str] = [
+        #     "hp",
+        #     "speed",
+        #     "ranged damage",
+        #     "ranged cooldown",
+        #     "projectile range",
+        # ]
 
         if self.can_level_up():
             if self.levels < 1:
@@ -266,7 +266,8 @@ class ArcherStateAttacking_TeamA(State):
         # TODO : once changed, check surrounding radius by a certain amount
         # If enemy hp is (one-hit) status, change target to that
 
-        nearest_opponent = self.archer.world.get_nearest_opponent(self.archer)
+        # nearest_opponent = self.archer.world.get_nearest_opponent(self.archer)
+        nearest_opponent = get_opponent_in_range(self.archer)
         if nearest_opponent is not None:
             if (self.archer.position - nearest_opponent.position).length() <= self.archer.min_target_distance:
                 # If the new opponent found is not the same and 
@@ -487,7 +488,7 @@ class ArcherStateKO_TeamA(State):
             self.archer.path_graph = self.archer.paths[
                 randint(0, len(self.archer.paths) - 1)
             ]
-            self.archer.path: List[Connection] = get_path_to_enemy_base(self.archer, self.archer.path_graph, self.archer.position)
+            self.archer.path = get_path_to_enemy_base(self.archer, self.archer.path_graph, self.archer.position)
             self.archer.current_connection = 0
             return "seeking"
         return None
