@@ -182,14 +182,26 @@ class Wizard_TeamA(Character):
         if nearest_projectile is not None:
             distance_from_origin: Vector2 = nearest_projectile.position - \
                 nearest_projectile.origin_position
-            distance_until_despawn: Vector2 = nearest_projectile.max_range - \
+            distance_until_despawn: float = nearest_projectile.max_range - \
                 distance_from_origin.length()
+            original_velocity: Vector2 = nearest_projectile.velocity / nearest_projectile.maxSpeed
+
             # normal projectile
             if not nearest_projectile.explosive_image:
-                return
+                for i in range(int(distance_until_despawn)):
+                    projectile_rect = nearest_projectile.rect
+                    projectile_rect.left = nearest_projectile.position.x + \
+                        (original_velocity.x * i)
+                    projectile_rect.top = nearest_projectile.position.y + \
+                        (original_velocity.y * i)
+                    if (self.rect.colliderect(projectile_rect)):
+                        # TODO: find best direction to dodge and check if there are obstacles in the way
+                        y_velocity = self.velocity.y
+                        self.velocity.x *= -1
+                        self.velocity.y = self.velocity.x
+                        self.velocity.x = y_velocity
             # explosive projectile
             else:
-                original_velocity: Vector2 = nearest_projectile.velocity / nearest_projectile.maxSpeed
                 point_of_explosion: Vector2 = nearest_projectile.position + \
                     (original_velocity
                      * distance_until_despawn)
@@ -203,12 +215,11 @@ class Wizard_TeamA(Character):
                     explosion, self.world.entities.values(), False)
 
                 if self in collide_list:
+                    # TODO: find best direction to dodge and check if there are obstacles in the way
                     y_velocity = self.velocity.y
                     self.velocity.x *= -1
                     self.velocity.y = self.velocity.x
                     self.velocity.x = y_velocity
-
-                return True
 
     def render(self, surface):
 
