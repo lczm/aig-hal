@@ -266,7 +266,8 @@ class ArcherStateAttacking_TeamA(State):
         # TODO : once changed, check surrounding radius by a certain amount
         # If enemy hp is (one-hit) status, change target to that
 
-        nearest_opponent = self.archer.world.get_nearest_opponent(self.archer)
+        # nearest_opponent = self.archer.world.get_nearest_opponent(self.archer)
+        nearest_opponent = get_opponent_in_range(self.archer)
         if nearest_opponent is not None:
             if (self.archer.position - nearest_opponent.position).length() <= self.archer.min_target_distance:
                 # If the new opponent found is not the same and 

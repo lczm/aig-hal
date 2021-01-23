@@ -86,28 +86,28 @@ def get_graph(person: Character, graph: Graph, lane: Lane) -> Graph:
 
 
 def get_top_graph(person: Character) -> Graph:
-    if getattr(person, "paths"): 
+    if hasattr(person, "paths"): 
         return person.paths[TOP_PATH]
     else: 
         return person.world.paths[TOP_PATH]
 
 
 def get_mid_top_graph(person: Character) -> Graph:
-    if getattr(person, "paths"):
+    if hasattr(person, "paths"):
         return person.paths[MID_TOP_PATH]
     else:
         return person.world.paths[MID_TOP_PATH]
 
 
 def get_mid_bot_graph(person: Character) -> Graph:
-    if getattr(person, "paths"):
+    if hasattr(person, "paths"):
         return person.paths[MID_BOT_PATH]
     else:
         return person.world.paths[MID_BOT_PATH]
 
 
 def get_bot_graph(person: Character) -> Graph:
-    if getattr(person, "paths"):
+    if hasattr(person, "paths"):
         return person.paths[BOT_PATH]
     else:
         return person.world.paths[BOT_PATH]
@@ -406,6 +406,50 @@ def generate_series_of_connections(person: Character, node_ids: List[int]) -> Li
         ))
 
     return connections
+
+
+# This gets an opponent that is within range while being relatively sane,
+# i.e. picks targets that are one shot away
+def get_opponent_in_range(person: Character) -> Character:
+    nearest_opponent: Character = None
+    distance: float = 0
+
+    range: float = person.min_target_distance
+    attack_damage: float = person.ranged_damage
+
+    entity: Character
+    for entity in person.world.entities.values():
+        # neutral entity
+        if entity.team_id == 2:
+            continue
+        # same team
+        if entity.team_id == person.team_id:
+            continue
+        # projectile or explosion
+        if entity.name == "projectile" or entity.name == "explosion":
+            continue
+        # dead
+        if entity.ko:
+            continue
+        
+        # Get the distance away from the entity
+        current_distance: float = (person.position - entity.position).length()
+
+        # If the entity is within attackable range
+        if current_distance <= range:
+            # If the entity is 1 shot away from dying, just select that.
+            if entity.current_hp <= attack_damage:
+                return entity
+            else:
+                if nearest_opponent is None:
+                    nearest_opponent = entity
+                    distance = current_distance
+                else:
+                    if distance > current_distance:
+                        distance = current_distance
+                        nearest_opponent = entity
+
+    return nearest_opponent
 
 
 # Debug function to see where the character is going from/to
