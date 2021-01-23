@@ -364,7 +364,7 @@ def get_highest_lane_threat(
 
 def generate_pathfinding_graphs(
     filename: str, person: Character
-) -> Tuple[List[Graph], Graph]:
+) -> List[Graph]:
 
     graph: Graph = Graph(person.world)
     file = open(filename, "r")
@@ -414,7 +414,7 @@ def generate_pathfinding_graphs(
         paths.append(path)
         line = file.readline()
 
-    return paths, graph
+    return paths
 
 
 def generate_series_of_connections(person: Character, node_ids: List[int]) -> List[Connection]:

@@ -31,9 +31,7 @@ class Archer_TeamA(Character):
 
         self.max_lane: Lane = 0
 
-        self.paths: List[Graph]
-        self.global_graph: Graph
-        (self.paths, self.global_graph) = generate_pathfinding_graphs("more_pathfinding_nodes.txt", self)
+        self.paths: List[Graph] = generate_pathfinding_graphs("more_pathfinding_nodes.txt", self)
         self.path_graph: Graph = self.paths[0]
         # self.path_graph: Graph = self.world.paths[
         #     randint(0, len(self.world.paths) - 1)
@@ -284,8 +282,6 @@ class ArcherStateAttacking_TeamA(State):
                 # If the new opponent found is not the same and 
                 # If on kiting path, set back to normal path
                 if nearest_opponent != self.archer.target and self.archer.on_base_kiting_path:
-                    # Use global_graph here because the paths might not be connected.
-                    # To connect the graph, use the global_graph where all the connections are there.
                     self.archer.path_graph = get_graph(self.archer, 
                                                        self.archer.path_graph, 
                                                        get_lane(get_nearest_node_global_ignoring_base(self.archer.paths, self.archer.position).id))
