@@ -324,7 +324,7 @@ def get_relative_lane_threat(
 
         # there is an entity, it is either my team or the opponent's
         # get closest node for this entity
-        node: Node = get_nearest_node_global(paths, entity.position)
+        node: Node = get_nearest_node_global_ignoring_base(paths, entity.position)
         lane: Lane = get_lane(node.id)
 
         # If entity is at lane, ignore
