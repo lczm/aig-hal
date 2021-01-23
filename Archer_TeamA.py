@@ -286,10 +286,10 @@ class ArcherStateAttacking_TeamA(State):
                 if nearest_opponent != self.archer.target and self.archer.on_base_kiting_path:
                     # Use global_graph here because the paths might not be connected.
                     # To connect the graph, use the global_graph where all the connections are there.
-
-                    # self.archer.path = get_path_to_enemy_base_from_my_base(self.archer, self.archer.path_graph)
-                    # self.archer.path = get_path_from_base_to_position(self.archer, self.archer.path_graph)
-                    self.archer.path = get_path_from_base_to_position(self.archer, self.archer.global_graph)
+                    self.archer.path_graph = get_graph(self.archer, 
+                                                       self.archer.path_graph, 
+                                                       get_lane(get_nearest_node_global_ignoring_base(self.archer.paths, self.archer.position).id))
+                    self.archer.path = get_path_from_base_to_position(self.archer, self.archer.path_graph)
                     # self.archer.current_connection = 0
                     self.archer.current_connection = len(self.archer.path) - 1
                     self.archer.on_base_kiting_path = False
