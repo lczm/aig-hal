@@ -222,12 +222,7 @@ class ArcherStateSeeking_TeamA(State):
 
         if (self.archer.on_base_kiting_path is False and
             (self.archer.position - self.archer.base.position).length() > 500):
-            highest_threat_lane = get_highest_lane_threat(self.archer.paths, self.archer)
-            current_lane: Lane = get_lane_character(self.archer.path_graph, self.archer)
-
-            if current_lane != highest_threat_lane:
-                self.archer.max_lane = highest_threat_lane
-                return "reposition"
+            return "reposition"
 
         # check if opponent is in range
         nearest_opponent = self.archer.world.get_nearest_opponent(self.archer)
@@ -452,6 +447,12 @@ class ArcherRepositionState_TeamA(State):
 
         # If at the start of the path, get a new path and go back to seeking
         if self.archer.at_start_of_connection() and self.archer.at_node():
+            highest_threat_lane = get_highest_lane_threat(self.archer.paths, self.archer)
+            current_lane: Lane = get_lane_character(self.archer.path_graph, self.archer)
+
+            if current_lane != highest_threat_lane:
+                self.archer.max_lane = highest_threat_lane
+
             self.archer.path_graph = get_graph(self.archer, self.archer.path_graph, self.archer.max_lane)
             self.archer.path = get_path_to_enemy_base(self.archer, self.archer.path_graph, self.archer.position)
             return "seeking"
