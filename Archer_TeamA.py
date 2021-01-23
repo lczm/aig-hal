@@ -300,10 +300,16 @@ class ArcherStateAttacking_TeamA(State):
             self.archer.position - self.archer.target.position
         ).length()
 
-        # if (self.archer.on_base_kiting_path and
-        #     self.archer.at_end_of_connection() and
-        #     self.archer.at_node()):
-        #     self.archer.path = self.archer.path.reverse()
+        # If the archer is at the end of the ktiing path, move it back towards the base
+        if (self.archer.on_base_kiting_path and
+            self.archer.at_start_of_connection() and
+            self.archer.at_node()):
+            self.archer.path_graph = get_graph(self.archer, 
+                                                self.archer.path_graph, 
+                                                get_lane(get_nearest_node_global_ignoring_base(self.archer.paths, self.archer.position).id))
+            self.archer.path = get_path_from_base_to_position(self.archer, self.archer.path_graph)
+            self.archer.current_connection = len(self.archer.path) - 1
+            self.archer.on_base_kiting_path = False
 
         # At the start of the path graph, node 0
         if (
