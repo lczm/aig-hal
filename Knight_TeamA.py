@@ -5,6 +5,7 @@ from Graph import *
 
 from Character import *
 from State import *
+from Utils_Mayasol import *
 
 class Knight_TeamA(Character):
 
@@ -23,6 +24,7 @@ class Knight_TeamA(Character):
         self.min_target_distance = 100
         self.melee_damage = 20
         self.melee_cooldown = 2.
+        self.enemy_locations = get_enemies_positions_in_lanes(self.world.paths, self)
 
         seeking_state = KnightStateSeeking_TeamA(self)
         attacking_state = KnightStateAttacking_TeamA(self)
@@ -36,7 +38,7 @@ class Knight_TeamA(Character):
 
         self.brain.set_state("seeking")
 
-    #check if knight is alone and tanking for nothing lol
+    #check if knight is alone and tanking for nothing
     def get_nearest_ranged_ally(self):
 
         nearest_ranged_ally = None
@@ -61,6 +63,11 @@ class Knight_TeamA(Character):
         
         return nearest_ranged_ally
 
+    def defend(self):
+        for lane in self.enemy_locations:
+            if self.enemy_locations[lane] > 2:
+                return True
+
     def render(self, surface):
 
         Character.render(self, surface)
@@ -84,7 +91,7 @@ class KnightStateSeeking_TeamA(State):
         self.knight = knight
 
         #picks 1/4 path at random
-        self.knight.path_graph = self.knight.world.paths[randint(0, len(self.knight.world.paths)-1)]
+        self.knight.path_graph = self.knight.world.paths[1]
 
     def do_actions(self):
 
@@ -93,11 +100,12 @@ class KnightStateSeeking_TeamA(State):
             self.knight.velocity.normalize_ip()
             self.knight.velocity *= self.knight.maxSpeed
 
+        self.knight.enemy_locations = get_enemies_positions_in_lanes(self.knight.world.paths, self.knight)
+
     def check_conditions(self):
 
-        #TO-DO
-        #if self.knight.base.current_hp < self.knight.base.max_hp * 0.65 and enemy pushing together in a lane:
-        #    return "fleeing"
+        if self.knight.base.current_hp < self.knight.base.max_hp * 0.65 and self.knight.defend():
+            return "fleeing"
 
         # heal if knight HP is below 90% when seeking
         if (self.knight.current_hp <= self.knight.max_hp * 0.9):
@@ -122,9 +130,7 @@ class KnightStateSeeking_TeamA(State):
 
     def entry_actions(self):
         #node-to-node pathfinding
-        self.path = pathFindAStar(self.knight.path_graph, \
-                                  self.knight.path_graph.get_nearest_node(self.knight.position), \
-                                  self.knight.path_graph.nodes[self.knight.base.target_node_index])
+        self.path = get_path_to_enemy_base(self.knight, self.knight.path_graph, self.knight.position)
 
         if self.path is None:
             self.path_length = 0
@@ -206,13 +212,7 @@ class KnightStateAttacking_TeamA(State):
 
     def entry_actions(self):
         
-        self.path = pathFindAStar(self.knight.path_graph, \
-                                    self.knight.path_graph.get_nearest_node(self.knight.position), \
-                                    self.knight.path_graph.nodes[self.knight.base.spawn_node_index])
-        
-        #self.path_to_enemy_spawn = pathFindAStar(self.knight.path_graph, \
-        #                            self.knight.path_graph.get_nearest_node(self.knight.position), \
-        #                            self.knight.path_graph.nodes[self.knight.base.target_node_index])
+        self.path = get_path_to_my_base(self.knight, self.knight.path_graph, self.knight.position)
 
         if self.path is None:
             self.path_length = 0
@@ -310,9 +310,7 @@ class KnightStateFleeing_TeamA(State):
 
     def entry_actions(self):
         # generate path upon fleeing
-        self.path = pathFindAStar(self.knight.path_graph, \
-                                self.knight.path_graph.get_nearest_node(self.knight.position), \
-                                self.knight.path_graph.nodes[self.knight.base.spawn_node_index])
+        self.path = get_path_to_my_base(self.knight, self.knight.path_graph, self.knight.position)
 
         if self.path is None:
             self.path_length = 0
