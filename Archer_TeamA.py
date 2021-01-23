@@ -33,20 +33,7 @@ class Archer_TeamA(Character):
 
         self.paths: List[Graph] = generate_pathfinding_graphs("more_pathfinding_nodes.txt", self)
         self.path_graph: Graph = self.paths[0]
-        # self.path_graph: Graph = self.world.paths[
-        #     randint(0, len(self.world.paths) - 1)
-        # ]
-
         self.path: List[Connection] = get_path_to_enemy_base(self, self.path_graph, self.position)
-
-        # test
-        # get_path_from_base_to_position(self, self.path_graph)
-        # test = pathFindAStar(
-        #     self.path_graph,
-        #     # get_initial_start_node(self),
-        #     get_node_from_id(self.paths, 0),
-        #     get_node_from_id(self.paths, 5),
-        # )
 
         self.on_base_kiting_path: bool = False
         self.path_base_kite_left: List[Connection] = self.get_path_base_kite_left()
@@ -222,12 +209,15 @@ class ArcherStateSeeking_TeamA(State):
             self.archer.velocity *= self.archer.maxSpeed
 
     def check_conditions(self) -> str:
-        if (self.archer.current_hp < (self.archer.max_hp / 100 * 50) and 
-            self.archer.current_healing_cooldown <= 0):
+        # if (self.archer.current_hp < (self.archer.max_hp / 100 * 50) and 
+        if (self.archer.current_hp != self.archer.max_hp and 
+            self.archer.current_healing_cooldown <= 0 and
+            self.archer.can_heal() and
+            get_amount_of_enemies_in_range(self.archer, self.archer.min_target_distance + 100) == 0):
             return "fleeing"
 
         if (self.archer.on_base_kiting_path is False and
-            (self.archer.position - self.archer.base.position).length() > 400):
+            (self.archer.position - self.archer.base.position).length() > 450):
             highest_threat_lane = get_highest_lane_threat(self.archer.paths, self.archer)
             current_lane: Lane = get_lane_character(self.archer.path_graph, self.archer)
 
@@ -250,19 +240,12 @@ class ArcherStateSeeking_TeamA(State):
             if self.archer.connection_not_at_end():
                 self.archer.increment_connection()
                 self.archer.set_move_target_to_node()
-                print("seeking: +1 current_connection")
 
         return None
 
     def entry_actions(self) -> None:
         if len(self.archer.path) > 0 and self.archer.current_connection <= len(self.archer.path) - 1:
-            # self.archer.current_connection = 0
-            # self.archer.move_target.position = self.archer.path[0].fromNode.position
             self.archer.move_target.position = self.archer.path[self.archer.current_connection].toNode.position
-        # else:
-        #     self.archer.move_target.position = self.archer.path_graph.nodes[
-        #         self.archer.base.target_node_index
-        #     ].position
         return None
 
 
@@ -375,9 +358,11 @@ class ArcherStateAttacking_TeamA(State):
             self.archer.velocity *= self.archer.maxSpeed
 
     def check_conditions(self) -> str:
-        # If less than 50% hp and can heal
-        if (self.archer.current_hp < (self.archer.max_hp / 100 * 50) and 
-            self.archer.can_heal()):
+        # If less than 50% hp and can heal, and at an adequate distance to run
+        # if (self.archer.current_hp < (self.archer.max_hp / 100 * 50) and 
+        if ((self.archer.current_hp != self.archer.max_hp) and
+            self.archer.can_heal() and
+            (self.archer.base.position - self.archer.position).length() > 500):
             return "fleeing"
 
         # target is gone
@@ -386,8 +371,6 @@ class ArcherStateAttacking_TeamA(State):
             or self.archer.target.ko
         ):
             self.archer.target = None
-            # self.archer.set_move_target_to_node()
-            # self.archer.velocity = self.archer.move_target.position - self.archer.position
             return "seeking"
         
         # if the opponent is too far away from me
@@ -402,7 +385,6 @@ class ArcherStateAttacking_TeamA(State):
         return None
 
     def entry_actions(self) -> None:
-        # self.archer.move_target.position = self.archer.path[0].fromNode.position
         return None
 
 
@@ -412,19 +394,14 @@ class ArcherStateFleeing_TeamA(State):
         self.archer: Archer_TeamA = archer
     
     def do_actions(self) -> None:
-        # Run back
-        # if self.archer.at_start_of_connection() and self.archer.at_node():
-        #     self.archer.decrement_connection
-
-        # if self.archer.on_base_kiting_path:
-        #     if self.archer.connection_not_at_end() and self.archer.at_node():
-        #         self.archer.increment_connection()
-        #     self.archer.set_move_target_to_node()
-        # else:
-
-        if self.archer.connection_not_at_start() and self.archer.at_node(): 
-            self.archer.decrement_connection()
-        self.archer.set_move_target_from_node()
+        if self.archer.on_base_kiting_path:
+            if self.archer.connection_not_at_end() and self.archer.at_node(): 
+                self.archer.increment_connection()
+            self.archer.set_move_target_to_node()
+        else:
+            if self.archer.connection_not_at_start() and self.archer.at_node(): 
+                self.archer.decrement_connection()
+            self.archer.set_move_target_from_node()
 
         self.archer.set_velocity()
         if self.archer.velocity.length() > 0:
@@ -433,6 +410,7 @@ class ArcherStateFleeing_TeamA(State):
 
         # Heal, it will check if it can heal
         self.archer.heal()
+        print("fleeing")
         return None
 
     def check_conditions(self) -> str:
@@ -460,6 +438,7 @@ class ArcherRepositionState_TeamA(State):
         if self.archer.velocity.length() > 0:
             self.archer.velocity.normalize_ip()
             self.archer.velocity *= self.archer.maxSpeed
+        print("repositioning")
         return None
 
     def check_conditions(self) -> str:

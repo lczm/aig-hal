@@ -140,10 +140,16 @@ def get_path_to_enemy_base_from_my_base(person: Character, path_graph: Graph) ->
     )
 
 def get_path_to_my_base(person: Character, path_graph: Graph, position: Vector2) -> List[Connection]:
+    paths: List[Graph]
+    if hasattr(person, "paths"):
+        paths = person.paths
+    else:
+        paths = person.world.paths
+
     return pathFindAStar(
         path_graph,
         path_graph.get_nearest_node(position),
-        get_node_from_id(person.world.paths, person.base.spawn_node_index)
+        get_node_from_id(paths, person.base.spawn_node_index)
     )
 
 def get_path_from_base_to_position(person: Character, path_graph: Graph) -> List[Connection]:
@@ -486,6 +492,32 @@ def get_opponent_in_range(person: Character) -> Character:
                         nearest_opponent = entity
 
     return nearest_opponent
+
+
+def get_amount_of_enemies_in_range(person: Character, range: float):
+    amount: int = 0
+
+    entity: Character
+    for entity in person.world.entities.values():
+        # neutral entity
+        if entity.team_id == 2:
+            continue
+        # same team
+        if entity.team_id == person.team_id:
+            continue
+        # projectile or explosion
+        if entity.name == "projectile" or entity.name == "explosion":
+            continue
+        # dead
+        if entity.ko:
+            continue
+        
+        # Get the distance away from the entity
+        current_distance: float = (person.position - entity.position).length()
+        if current_distance <= range:
+            amount += 1
+
+    return amount
 
 
 # Debug function to see where the character is going from/to
