@@ -749,12 +749,12 @@ def dodge_projectile(person: Character, explosion_dodge_backward: bool = True):
                             person.velocity.normalize_ip()
                             person.velocity *= person.maxSpeed
                             return
-    elif nearest_projectile is not None and nearest_projectile.name == "explosion":
-        point_of_explosion: Vector2 = Vector2(
-            nearest_projectile.position.x, nearest_projectile.position.y)
-        explosion_rect = nearest_projectile.rect.copy()
-        predicted_character_rect = person.rect.copy()
-        predicted_character_rect.x += person.velocity.x * person.time_passed
-        predicted_character_rect.y += person.velocity.y * person.time_passed
-        if (explosion_rect.colliderect(predicted_character_rect)):
-            person.velocity = -person.velocity
+    # elif nearest_projectile is not None and nearest_projectile.name == "explosion":
+    #     point_of_explosion: Vector2 = Vector2(
+    #         nearest_projectile.position.x, nearest_projectile.position.y)
+    #     explosion_rect = nearest_projectile.rect.copy()
+    #     predicted_character_rect = person.rect.copy()
+    #     predicted_character_rect.x += person.velocity.x * person.time_passed
+    #     predicted_character_rect.y += person.velocity.y * person.time_passed
+    #     if (explosion_rect.colliderect(predicted_character_rect)):
+    #         person.velocity = -person.velocity
