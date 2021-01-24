@@ -216,7 +216,7 @@ class ArcherStateSeeking_TeamA(State):
             get_amount_of_enemies_in_range(self.archer, self.archer.min_target_distance + 100) == 0):
             return "fleeing"
 
-        if (get_amount_of_enemies_in_range(self.archer.base, 300) > 0 and
+        if (get_amount_of_enemies_in_range(self.archer.base, 400) > 0 and
             (self.archer.base.position - self.archer.position).length() > 300):
             self.archer.path_graph = get_graph(self.archer, 
                                                 self.archer.path_graph, 
