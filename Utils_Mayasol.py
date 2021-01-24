@@ -563,7 +563,7 @@ def draw_circle_at_position(position: Vector2, surface: pygame.Surface,
     return None
 
 
-def dodge_projectile(person: Character):
+def dodge_projectile(person: Character, explosion_dodge_backward: bool = True):
     nearest_projectile: GameEntity = get_nearest_projectile(person)
     if nearest_projectile is not None and not nearest_projectile.name == "explosion":
         distance_from_origin: Vector2 = nearest_projectile.position - \
@@ -722,32 +722,33 @@ def dodge_projectile(person: Character):
                         person.velocity.normalize_ip()
                         person.velocity *= person.maxSpeed
                         return
-                projectile_velocity = Vector2(
-                    nearest_projectile.velocity.x, nearest_projectile.velocity.y)
-                x_velocity = projectile_velocity.x
-                fake_velocity = Vector2(
-                    projectile_velocity.x, projectile_velocity.y)
-                fake_rect = person.rect.copy()
-                character_original_velocity = fake_velocity / person.maxSpeed
-                for k in range(int(distance_until_explode)):
-                    fake_rect.x = person.position.x + \
-                        (character_original_velocity.x * k) - w/2
-                    fake_rect.y = person.position.y + \
-                        (character_original_velocity.y * k) - h/2
-                    fake_rect_position = Vector2(
-                        fake_rect.x, fake_rect.y)
-                    # if possible to dodge
-                    if not (explosion.rect.colliderect(fake_rect)) \
-                            and not check_for_obstacles(fake_rect, person.world.obstacles) \
-                            and not check_screen_edge(fake_rect_position):
-                        # dodge 90 degree clockwise from the projectile
-                        #person.velocity.x *= -1
-                        #person.velocity.y = person.velocity.x
-                        #person.velocity.x = y_velocity
-                        person.velocity = fake_rect_position - person.position
-                        person.velocity.normalize_ip()
-                        person.velocity *= person.maxSpeed
-                        return
+                if (explosion_dodge_backward):
+                    projectile_velocity = Vector2(
+                        nearest_projectile.velocity.x, nearest_projectile.velocity.y)
+                    x_velocity = projectile_velocity.x
+                    fake_velocity = Vector2(
+                        projectile_velocity.x, projectile_velocity.y)
+                    fake_rect = person.rect.copy()
+                    character_original_velocity = fake_velocity / person.maxSpeed
+                    for k in range(int(distance_until_explode)):
+                        fake_rect.x = person.position.x + \
+                            (character_original_velocity.x * k) - w/2
+                        fake_rect.y = person.position.y + \
+                            (character_original_velocity.y * k) - h/2
+                        fake_rect_position = Vector2(
+                            fake_rect.x, fake_rect.y)
+                        # if possible to dodge
+                        if not (explosion.rect.colliderect(fake_rect)) \
+                                and not check_for_obstacles(fake_rect, person.world.obstacles) \
+                                and not check_screen_edge(fake_rect_position):
+                            # dodge 90 degree clockwise from the projectile
+                            #person.velocity.x *= -1
+                            #person.velocity.y = person.velocity.x
+                            #person.velocity.x = y_velocity
+                            person.velocity = fake_rect_position - person.position
+                            person.velocity.normalize_ip()
+                            person.velocity *= person.maxSpeed
+                            return
     elif nearest_projectile is not None and nearest_projectile.name == "explosion":
         point_of_explosion: Vector2 = Vector2(
             nearest_projectile.position.x, nearest_projectile.position.y)
