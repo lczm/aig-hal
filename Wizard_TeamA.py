@@ -38,7 +38,6 @@ class Wizard_TeamA(Character):
         self.min_target_distance: int = 100
         self.projectile_range: int = 100
         self.projectile_speed: int = 100
-        self.xp = 2000
 
         seeking_state: WizardStateSeeking_TeamA = WizardStateSeeking_TeamA(
             self)
@@ -175,12 +174,12 @@ class Wizard_TeamA(Character):
             return get_graph(entity, entity.path_graph, knight_lane)
 
         print("using random graph")
-        # return a random graph if there is no knight
-        return self.world.paths[1]
+        # go bot if no knight
+        return self.world.paths[2]
 
     def dodge_projectile(self):
         nearest_projectile: GameEntity = get_nearest_projectile(self)
-        if nearest_projectile is not None:
+        if nearest_projectile is not None and not nearest_projectile.name == "explosion":
             distance_from_origin: Vector2 = nearest_projectile.position - \
                 nearest_projectile.origin_position
             distance_until_despawn: float = nearest_projectile.max_range - \
@@ -188,16 +187,18 @@ class Wizard_TeamA(Character):
             original_velocity: Vector2 = nearest_projectile.velocity / nearest_projectile.maxSpeed
             # normal projectile
             if not nearest_projectile.explosive_image:
-                for i in range(int(distance_until_despawn)):
-                    projectile_rect: Rect = nearest_projectile.rect
+                # +2 to account for error when converting float to int
+                for i in range(int(distance_until_despawn + 2)):
+                    projectile_rect: Rect = nearest_projectile.rect.copy()
                     w, h = nearest_projectile.image.get_size()
                     projectile_rect.x = nearest_projectile.position.x + \
                         (original_velocity.x * i) - w/2
                     projectile_rect.y = nearest_projectile.position.y + \
                         (original_velocity.y * i) - h/2
-                    if (self.rect.colliderect(projectile_rect)):
+                    if (projectile_rect.colliderect(self.rect)):
+                        self.projectile_rect = projectile_rect
                         distance_until_collide: float = nearest_projectile.position.length(
-                        ) - Vector2(projectile_rect.left, projectile_rect.top).length()
+                        ) - Vector2(projectile_rect.x, projectile_rect.y).length()
                         # rotate velocity 90 degree clockwise from projectile
                         projectile_velocity = Vector2(
                             nearest_projectile.velocity.x, nearest_projectile.velocity.y)
@@ -208,13 +209,14 @@ class Wizard_TeamA(Character):
                         fake_velocity = Vector2(
                             projectile_velocity.x, projectile_velocity.y)
                         fake_rect = self.rect.copy()
+                        w, h = self.image.get_size()
                         character_original_velocity = fake_velocity / self.maxSpeed
 
-                        for j in range(int(distance_until_collide + 1)):
+                        for j in range(int(distance_until_collide)):
                             fake_rect.x = self.position.x + \
-                                (character_original_velocity.x * j)
+                                (character_original_velocity.x * j) - w/2
                             fake_rect.y = self.position.y + \
-                                (character_original_velocity.y * j)
+                                (character_original_velocity.y * j) - h/2
                             fake_rect_position = Vector2(
                                 fake_rect.x, fake_rect.y)
                             # if possible to dodge
@@ -222,9 +224,6 @@ class Wizard_TeamA(Character):
                                     and not check_for_obstacles(fake_rect, self.world.obstacles) \
                                     and not check_screen_edge(fake_rect_position):
                                 # dodge 90 degree clockwise from the projectile
-                                #self.velocity.x *= -1
-                                #self.velocity.y = self.velocity.x
-                                #self.velocity.x = y_velocity
                                 self.velocity = fake_rect_position - self.position
                                 self.velocity.normalize_ip()
                                 self.velocity *= self.maxSpeed
@@ -241,11 +240,11 @@ class Wizard_TeamA(Character):
                             projectile_velocity.x, projectile_velocity.y)
                         fake_rect = self.rect.copy()
                         character_original_velocity = fake_velocity / self.maxSpeed
-                        for j in range(int(distance_until_collide + 1)):
+                        for k in range(int(distance_until_collide)):
                             fake_rect.x = self.position.x + \
-                                (character_original_velocity.x * j)
+                                (character_original_velocity.x * k) - w/2
                             fake_rect.y = self.position.y + \
-                                (character_original_velocity.y * j)
+                                (character_original_velocity.y * k) - h/2
                             fake_rect_position = Vector2(
                                 fake_rect.x, fake_rect.y)
                             # if possible to dodge
@@ -258,43 +257,9 @@ class Wizard_TeamA(Character):
                                 self.velocity *= self.maxSpeed
                                 return
 
-                        # check if can dodge 180 degrees backward
-                        projectile_velocity = Vector2(
-                            nearest_projectile.velocity.x, nearest_projectile.velocity.y)
-                        x_velocity = projectile_velocity.x
-                        projectile_velocity.y *= -1
-                        projectile_velocity.x *= -1
-                        fake_velocity = Vector2(
-                            projectile_velocity.x, projectile_velocity.y)
-                        fake_rect = self.rect.copy()
-                        character_original_velocity = fake_velocity / self.maxSpeed
-                        #x_velocity = fake_character.velocity.x
-                        #fake_character.velocity.y *= -1
-                        #fake_character.velocity.x = fake_character.velocity.y
-                        #fake_character.velocity.y = x_velocity
-                        for k in range(int(distance_until_collide + 1)):
-                            fake_rect.x = self.position.x + \
-                                (character_original_velocity.x * k)
-                            fake_rect.y = self.position.y + \
-                                (character_original_velocity.y * k)
-                            fake_rect_position = Vector2(
-                                fake_rect.x, fake_rect.y)
-                            # if possible to dodge
-                            if not (projectile_rect.colliderect(fake_rect)) \
-                                    and not check_for_obstacles(fake_rect, self.world.obstacles) \
-                                    and not check_screen_edge(fake_rect_position):
-                                # dodge 90 degree clockwise from the projectile
-                                #self.velocity.x *= -1
-                                #self.velocity.y = self.velocity.x
-                                #self.velocity.x = y_velocity
-                                self.velocity = fake_rect_position - self.position
-                                self.velocity.normalize_ip()
-                                self.velocity *= self.maxSpeed
-                                return
-
                         print("undodgeable")
 
-        # explosive projectile
+            # explosive projectile
             else:
                 point_of_explosion: Vector2 = nearest_projectile.position + \
                     (original_velocity
@@ -321,12 +286,13 @@ class Wizard_TeamA(Character):
                     fake_velocity = Vector2(
                         projectile_velocity.x, projectile_velocity.y)
                     fake_rect = self.rect.copy()
+                    w, h = self.image.get_size()
                     character_original_velocity = fake_velocity / self.maxSpeed
                     for i in range(int(distance_until_explode)):
                         fake_rect.x = self.position.x + \
-                            (character_original_velocity.x * i)
+                            (character_original_velocity.x * i) - w/2
                         fake_rect.y = self.position.y + \
-                            (character_original_velocity.y * i)
+                            (character_original_velocity.y * i) - h/2
                         fake_rect_position = Vector2(
                             fake_rect.x, fake_rect.y)
                         # if possible to dodge
@@ -353,9 +319,9 @@ class Wizard_TeamA(Character):
                     character_original_velocity = fake_velocity / self.maxSpeed
                     for j in range(int(distance_until_explode)):
                         fake_rect.x = self.position.x + \
-                            (character_original_velocity.x * j)
+                            (character_original_velocity.x * j) - w/2
                         fake_rect.y = self.position.y + \
-                            (character_original_velocity.y * j)
+                            (character_original_velocity.y * j) - h/2
                         fake_rect_position = Vector2(
                             fake_rect.x, fake_rect.y)
                         # if possible to dodge
@@ -373,17 +339,15 @@ class Wizard_TeamA(Character):
                     projectile_velocity = Vector2(
                         nearest_projectile.velocity.x, nearest_projectile.velocity.y)
                     x_velocity = projectile_velocity.x
-                    projectile_velocity.y *= -1
-                    projectile_velocity.x *= -1
                     fake_velocity = Vector2(
                         projectile_velocity.x, projectile_velocity.y)
                     fake_rect = self.rect.copy()
                     character_original_velocity = fake_velocity / self.maxSpeed
                     for k in range(int(distance_until_explode)):
                         fake_rect.x = self.position.x + \
-                            (character_original_velocity.x * k)
+                            (character_original_velocity.x * k) - w/2
                         fake_rect.y = self.position.y + \
-                            (character_original_velocity.y * k)
+                            (character_original_velocity.y * k) - h/2
                         fake_rect_position = Vector2(
                             fake_rect.x, fake_rect.y)
                         # if possible to dodge
@@ -398,6 +362,15 @@ class Wizard_TeamA(Character):
                             self.velocity.normalize_ip()
                             self.velocity *= self.maxSpeed
                             return
+        elif nearest_projectile is not None and nearest_projectile.name == "explosion":
+            point_of_explosion: Vector2 = Vector2(
+                nearest_projectile.position.x, nearest_projectile.position.y)
+            explosion_rect = nearest_projectile.rect.copy()
+            predicted_character_rect = self.rect.copy()
+            predicted_character_rect.x += self.velocity.x * self.time_passed
+            predicted_character_rect.y += self.velocity.y * self.time_passed
+            if (explosion_rect.colliderect(predicted_character_rect)):
+                self.velocity = -self.velocity
 
     def render(self, surface):
 
