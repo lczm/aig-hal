@@ -540,6 +540,22 @@ def get_amount_of_enemies_in_range(person: Character, range: float):
     return amount
 
 
+def get_current_connection_at_position_to_node(person: Character) -> int:
+    paths: List[Graph]
+    if hasattr(person, "paths"):
+        paths = person.paths
+    else:
+        paths = person.world.paths
+
+    nearest_node = get_nearest_node_global(paths, person.position)
+
+    for i in range(len(person.path)):
+        if person.path[i].toNode.id == nearest_node.id:
+            return i
+
+    return 0
+
+
 # Debug function to see where the character is going from/to
 def draw_circle_at_position(position: Vector2, surface: pygame.Surface,
                             color: Tuple[int] = (255, 0, 0)) -> None:

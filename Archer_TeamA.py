@@ -219,9 +219,7 @@ class ArcherStateSeeking_TeamA(State):
         if self.archer.velocity.length() > 0:
             self.archer.velocity.normalize_ip()
             self.archer.velocity *= self.archer.maxSpeed
-
-        dodge_projectile(self.archer)
-        print("seeking")
+        # dodge_projectile(self.archer)
 
     def check_conditions(self) -> str:
         # if not full health, can heal, and no enemies within range
@@ -243,11 +241,10 @@ class ArcherStateSeeking_TeamA(State):
                                                     get_lane(get_nearest_node_global_ignoring_base(self.archer.paths, self.archer.position).id))
                 self.archer.path = get_path_from_base_to_position(self.archer, self.archer.path_graph)
                 self.archer.current_connection = len(self.archer.path) - 1
-                print("switching to reposition 1")
                 return "reposition"
 
         if (self.archer.on_base_kiting_path is False and
-            (self.archer.position - self.archer.base.position).length() > 400):
+           (self.archer.position - self.archer.base.position).length() > 400):
 
             highest_threat_lane = get_highest_lane_threat(self.archer.paths, self.archer)
             current_lane: Lane = get_lane_character(self.archer.path_graph, self.archer)
@@ -259,7 +256,6 @@ class ArcherStateSeeking_TeamA(State):
                                                     get_lane(get_nearest_node_global_ignoring_base(self.archer.paths, self.archer.position).id))
                 self.archer.path = get_path_from_base_to_position(self.archer, self.archer.path_graph)
                 self.archer.current_connection = len(self.archer.path) - 1
-                print("switching to reposition 2")
                 return "reposition"
 
         # check if opponent is in range
@@ -270,7 +266,6 @@ class ArcherStateSeeking_TeamA(State):
             ).length()
             if opponent_distance <= self.archer.min_target_distance:
                 self.archer.target = nearest_opponent
-                print("switching to attacking")
                 return "attacking"
 
         if (self.archer.position - self.archer.move_target.position).length() < 8:
@@ -394,8 +389,7 @@ class ArcherStateAttacking_TeamA(State):
         if self.archer.velocity.length() > 0:
             self.archer.velocity.normalize_ip()
             self.archer.velocity *= self.archer.maxSpeed
-        dodge_projectile(self.archer)
-        print("attacking")
+        # dodge_projectile(self.archer)
 
     def check_conditions(self) -> str:
         # If less than 50% hp and can heal, and at an adequate distance to run
@@ -412,11 +406,15 @@ class ArcherStateAttacking_TeamA(State):
         ):
             self.archer.target = None
 
-            if get_amount_of_enemies_in_range(self.archer.base, 300) > 0:
+            if get_amount_of_enemies_in_range(self.archer.base, 400) > 0:
                 self.archer.path_graph = get_graph(self.archer, 
-                                                    self.archer.path_graph, 
-                                                    get_lane(get_nearest_node_global_ignoring_base(self.archer.paths, self.archer.position).id))
-                self.archer.path = get_path_to_enemy_base_from_my_base(self.archer, self.archer.path_graph)
+                                                   self.archer.path_graph, 
+                                                   get_lane(get_nearest_node_global_ignoring_base(self.archer.paths, self.archer.position).id))
+                self.archer.path = get_path_from_base_to_position(self.archer, self.archer.path_graph)
+                self.archer.current_connection = get_current_connection_at_position_to_node(self.archer)
+
+                if self.archer.on_base_kiting_path is True:
+                    self.archer.on_base_kiting_path = False
                 return "reposition"
             else:
                 return "seeking"
@@ -457,7 +455,7 @@ class ArcherStateFleeing_TeamA(State):
 
         # Heal, it will check if it can heal
         self.archer.heal()
-        dodge_projectile(self.archer)
+        # dodge_projectile(self.archer)
         return None
 
     def check_conditions(self) -> str:
@@ -469,7 +467,6 @@ class ArcherStateFleeing_TeamA(State):
         if not self.archer.can_heal() and self.archer.has_target():
             return "attacking"
 
-        print("fleeing")
         return None
 
     def entry_actions(self):
@@ -491,9 +488,7 @@ class ArcherRepositionState_TeamA(State):
         if self.archer.velocity.length() > 0:
             self.archer.velocity.normalize_ip()
             self.archer.velocity *= self.archer.maxSpeed
-        dodge_projectile(self.archer)
-
-        print("reposition")
+        # dodge_projectile(self.archer)
         return None
 
     def check_conditions(self) -> str:
