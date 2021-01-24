@@ -213,16 +213,24 @@ class ArcherStateSeeking_TeamA(State):
         if (self.archer.current_hp != self.archer.max_hp and 
             self.archer.can_heal() and
             get_amount_of_enemies_in_range(self.archer, self.archer.min_target_distance + 150) == 0):
+            print("switching to fleeing")
             return "fleeing"
 
         if (get_amount_of_enemies_in_range(self.archer.base, 400) > 0 and
             (self.archer.base.position - self.archer.position).length() > 300):
-            self.archer.path_graph = get_graph(self.archer, 
-                                                self.archer.path_graph, 
-                                                get_lane(get_nearest_node_global_ignoring_base(self.archer.paths, self.archer.position).id))
-            self.archer.path = get_path_from_base_to_position(self.archer, self.archer.path_graph)
-            self.archer.current_connection = len(self.archer.path) - 1
-            return "reposition"
+            highest_threat_lane = get_highest_lane_threat(self.archer.paths, self.archer)
+            current_lane: Lane = get_lane_character(self.archer.path_graph, self.archer)
+
+            if current_lane != highest_threat_lane:
+                self.archer.max_lane = highest_threat_lane
+                self.archer.path_graph = get_graph(self.archer, 
+                                                    self.archer.path_graph, 
+                                                    get_lane(get_nearest_node_global_ignoring_base(self.archer.paths, self.archer.position).id))
+                self.archer.path = get_path_from_base_to_position(self.archer, self.archer.path_graph)
+                self.archer.current_connection = len(self.archer.path) - 1
+                print("switching to reposition 1")
+                return "reposition"
+
 
         if (self.archer.on_base_kiting_path is False and
             (self.archer.position - self.archer.base.position).length() > 400):
@@ -232,12 +240,12 @@ class ArcherStateSeeking_TeamA(State):
 
             if current_lane != highest_threat_lane:
                 self.archer.max_lane = highest_threat_lane
-
                 self.archer.path_graph = get_graph(self.archer, 
                                                     self.archer.path_graph, 
                                                     get_lane(get_nearest_node_global_ignoring_base(self.archer.paths, self.archer.position).id))
                 self.archer.path = get_path_from_base_to_position(self.archer, self.archer.path_graph)
                 self.archer.current_connection = len(self.archer.path) - 1
+                print("switching to reposition 2")
                 return "reposition"
 
         # check if opponent is in range
@@ -248,6 +256,7 @@ class ArcherStateSeeking_TeamA(State):
             ).length()
             if opponent_distance <= self.archer.min_target_distance:
                 self.archer.target = nearest_opponent
+                print("switching to attacking")
                 return "attacking"
 
         if (self.archer.position - self.archer.move_target.position).length() < 8:
