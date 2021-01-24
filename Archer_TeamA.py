@@ -209,11 +209,10 @@ class ArcherStateSeeking_TeamA(State):
             self.archer.velocity *= self.archer.maxSpeed
 
     def check_conditions(self) -> str:
-        # if (self.archer.current_hp < (self.archer.max_hp / 100 * 50) and 
+        # if not full health, can heal, and no enemies within range
         if (self.archer.current_hp != self.archer.max_hp and 
-            self.archer.current_healing_cooldown <= 0 and
             self.archer.can_heal() and
-            get_amount_of_enemies_in_range(self.archer, self.archer.min_target_distance + 100) == 0):
+            get_amount_of_enemies_in_range(self.archer, self.archer.min_target_distance + 150) == 0):
             return "fleeing"
 
         if (get_amount_of_enemies_in_range(self.archer.base, 400) > 0 and
