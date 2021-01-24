@@ -86,9 +86,9 @@ def get_graph(person: Character, graph: Graph, lane: Lane) -> Graph:
 
 
 def get_top_graph(person: Character) -> Graph:
-    if hasattr(person, "paths"): 
+    if hasattr(person, "paths"):
         return person.paths[TOP_PATH]
-    else: 
+    else:
         return person.world.paths[TOP_PATH]
 
 
@@ -126,6 +126,7 @@ def get_path_to_enemy_base(person: Character, path_graph: Graph, position: Vecto
         get_node_from_id(paths, person.base.target_node_index)
     )
 
+
 def get_path_to_enemy_base_from_my_base(person: Character, path_graph: Graph) -> List[Connection]:
     paths: List[Graph]
     if hasattr(person, "paths"):
@@ -139,6 +140,7 @@ def get_path_to_enemy_base_from_my_base(person: Character, path_graph: Graph) ->
         get_node_from_id(paths, person.base.target_node_index)
     )
 
+
 def get_path_to_my_base(person: Character, path_graph: Graph, position: Vector2) -> List[Connection]:
     paths: List[Graph]
     if hasattr(person, "paths"):
@@ -151,6 +153,7 @@ def get_path_to_my_base(person: Character, path_graph: Graph, position: Vector2)
         path_graph.get_nearest_node(position),
         get_node_from_id(paths, person.base.spawn_node_index)
     )
+
 
 def get_path_from_base_to_position(person: Character, path_graph: Graph) -> List[Connection]:
     paths: List[Graph]
@@ -206,7 +209,7 @@ def get_nearest_node_global(paths: List[Graph], position: Vector2) -> Node:
     return nearest
 
 
-def get_nearest_node_global_ignoring_base(paths: List[Graph], position:Vector2) -> Node:
+def get_nearest_node_global_ignoring_base(paths: List[Graph], position: Vector2) -> Node:
     nearest: Node = None
     nearest_distance: float = inf
 
@@ -231,10 +234,6 @@ def get_nearest_projectile(person: Character) -> GameEntity:
     distance = 0.
 
     for entity in person.world.entities.values():
-        # neutral entity
-        if entity.team_id == 2:
-            continue
-
         # same team
         if entity.team_id == person.team_id:
             continue
@@ -251,6 +250,20 @@ def get_nearest_projectile(person: Character) -> GameEntity:
                 nearest_projectile = entity
 
     return nearest_projectile
+
+
+def check_for_obstacles(rect: Rect, obstacle_list: List) -> bool:
+    for obstacle in obstacle_list:
+        if rect.colliderect(obstacle.rect):
+            return True
+    return False
+
+
+def check_screen_edge(position: Vector2) -> bool:
+    if position[0] < 0 or position[0] > SCREEN_WIDTH or \
+            position[1] < 0 or position[1] > SCREEN_HEIGHT:
+        return True
+    return False
 
 
 # returns {int1: int2}
@@ -324,7 +337,8 @@ def get_relative_lane_threat(
 
         # there is an entity, it is either my team or the opponent's
         # get closest node for this entity
-        node: Node = get_nearest_node_global_ignoring_base(paths, entity.position)
+        node: Node = get_nearest_node_global_ignoring_base(
+            paths, entity.position)
         lane: Lane = get_lane(node.id)
 
         # If entity is at lane, ignore
@@ -434,7 +448,7 @@ def generate_series_of_connections(person: Character, node_ids: List[int]) -> Li
         path_graph = person.path_graph
     else:
         path_graph = person.world.path_graph
-    
+
     if hasattr(person, "paths"):
         paths = person.paths
     else:
@@ -473,7 +487,7 @@ def get_opponent_in_range(person: Character) -> Character:
         # dead
         if entity.ko:
             continue
-        
+
         # Get the distance away from the entity
         current_distance: float = (person.position - entity.position).length()
 
@@ -511,7 +525,7 @@ def get_amount_of_enemies_in_range(person: Character, range: float):
         # dead
         if entity.ko:
             continue
-        
+
         # Get the distance away from the entity
         current_distance: float = (person.position - entity.position).length()
         if current_distance <= range:

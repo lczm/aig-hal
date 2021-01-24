@@ -38,6 +38,7 @@ class Wizard_TeamA(Character):
         self.min_target_distance: int = 100
         self.projectile_range: int = 100
         self.projectile_speed: int = 100
+        self.xp = 2000
 
         seeking_state: WizardStateSeeking_TeamA = WizardStateSeeking_TeamA(
             self)
@@ -175,7 +176,7 @@ class Wizard_TeamA(Character):
 
         print("using random graph")
         # return a random graph if there is no knight
-        return self.world.paths[randint(0, len(self.world.paths) - 1)]
+        return self.world.paths[1]
 
     def dodge_projectile(self):
         nearest_projectile: GameEntity = get_nearest_projectile(self)
@@ -185,22 +186,115 @@ class Wizard_TeamA(Character):
             distance_until_despawn: float = nearest_projectile.max_range - \
                 distance_from_origin.length()
             original_velocity: Vector2 = nearest_projectile.velocity / nearest_projectile.maxSpeed
-
             # normal projectile
             if not nearest_projectile.explosive_image:
                 for i in range(int(distance_until_despawn)):
-                    projectile_rect = nearest_projectile.rect
-                    projectile_rect.left = nearest_projectile.position.x + \
-                        (original_velocity.x * i)
-                    projectile_rect.top = nearest_projectile.position.y + \
-                        (original_velocity.y * i)
+                    projectile_rect: Rect = nearest_projectile.rect
+                    w, h = nearest_projectile.image.get_size()
+                    projectile_rect.x = nearest_projectile.position.x + \
+                        (original_velocity.x * i) - w/2
+                    projectile_rect.y = nearest_projectile.position.y + \
+                        (original_velocity.y * i) - h/2
                     if (self.rect.colliderect(projectile_rect)):
-                        # TODO: find best direction to dodge and check if there are obstacles in the way
-                        y_velocity = self.velocity.y
-                        self.velocity.x *= -1
-                        self.velocity.y = self.velocity.x
-                        self.velocity.x = y_velocity
-            # explosive projectile
+                        distance_until_collide: float = nearest_projectile.position.length(
+                        ) - Vector2(projectile_rect.left, projectile_rect.top).length()
+                        # rotate velocity 90 degree clockwise from projectile
+                        projectile_velocity = Vector2(
+                            nearest_projectile.velocity.x, nearest_projectile.velocity.y)
+                        y_velocity = projectile_velocity.y
+                        projectile_velocity.x *= -1
+                        projectile_velocity.y = projectile_velocity.x
+                        projectile_velocity.x = y_velocity
+                        fake_velocity = Vector2(
+                            projectile_velocity.x, projectile_velocity.y)
+                        fake_rect = self.rect.copy()
+                        character_original_velocity = fake_velocity / self.maxSpeed
+
+                        for j in range(int(distance_until_collide + 1)):
+                            fake_rect.x = self.position.x + \
+                                (character_original_velocity.x * j)
+                            fake_rect.y = self.position.y + \
+                                (character_original_velocity.y * j)
+                            fake_rect_position = Vector2(
+                                fake_rect.x, fake_rect.y)
+                            # if possible to dodge
+                            if not (projectile_rect.colliderect(fake_rect)) \
+                                    and not check_for_obstacles(fake_rect, self.world.obstacles) \
+                                    and not check_screen_edge(fake_rect_position):
+                                # dodge 90 degree clockwise from the projectile
+                                #self.velocity.x *= -1
+                                #self.velocity.y = self.velocity.x
+                                #self.velocity.x = y_velocity
+                                self.velocity = fake_rect_position - self.position
+                                self.velocity.normalize_ip()
+                                self.velocity *= self.maxSpeed
+                                return
+
+                        # if code reaches here means cant dodge 90 degree clockwise
+                        projectile_velocity = Vector2(
+                            nearest_projectile.velocity.x, nearest_projectile.velocity.y)
+                        x_velocity = projectile_velocity.x
+                        projectile_velocity.y *= -1
+                        projectile_velocity.x = projectile_velocity.y
+                        projectile_velocity.y = x_velocity
+                        fake_velocity = Vector2(
+                            projectile_velocity.x, projectile_velocity.y)
+                        fake_rect = self.rect.copy()
+                        character_original_velocity = fake_velocity / self.maxSpeed
+                        for j in range(int(distance_until_collide + 1)):
+                            fake_rect.x = self.position.x + \
+                                (character_original_velocity.x * j)
+                            fake_rect.y = self.position.y + \
+                                (character_original_velocity.y * j)
+                            fake_rect_position = Vector2(
+                                fake_rect.x, fake_rect.y)
+                            # if possible to dodge
+                            if not (projectile_rect.colliderect(fake_rect)) \
+                                    and not check_for_obstacles(fake_rect, self.world.obstacles) \
+                                    and not check_screen_edge(fake_rect_position):
+                                # dodge 90 degree counterclockwise from the projectile
+                                self.velocity = fake_rect_position - self.position
+                                self.velocity.normalize_ip()
+                                self.velocity *= self.maxSpeed
+                                return
+
+                        # check if can dodge 180 degrees backward
+                        projectile_velocity = Vector2(
+                            nearest_projectile.velocity.x, nearest_projectile.velocity.y)
+                        x_velocity = projectile_velocity.x
+                        projectile_velocity.y *= -1
+                        projectile_velocity.x *= -1
+                        fake_velocity = Vector2(
+                            projectile_velocity.x, projectile_velocity.y)
+                        fake_rect = self.rect.copy()
+                        character_original_velocity = fake_velocity / self.maxSpeed
+                        #x_velocity = fake_character.velocity.x
+                        #fake_character.velocity.y *= -1
+                        #fake_character.velocity.x = fake_character.velocity.y
+                        #fake_character.velocity.y = x_velocity
+                        for k in range(int(distance_until_collide + 1)):
+                            fake_rect.x = self.position.x + \
+                                (character_original_velocity.x * k)
+                            fake_rect.y = self.position.y + \
+                                (character_original_velocity.y * k)
+                            fake_rect_position = Vector2(
+                                fake_rect.x, fake_rect.y)
+                            # if possible to dodge
+                            if not (projectile_rect.colliderect(fake_rect)) \
+                                    and not check_for_obstacles(fake_rect, self.world.obstacles) \
+                                    and not check_screen_edge(fake_rect_position):
+                                # dodge 90 degree clockwise from the projectile
+                                #self.velocity.x *= -1
+                                #self.velocity.y = self.velocity.x
+                                #self.velocity.x = y_velocity
+                                self.velocity = fake_rect_position - self.position
+                                self.velocity.normalize_ip()
+                                self.velocity *= self.maxSpeed
+                                return
+
+                        print("undodgeable")
+
+        # explosive projectile
             else:
                 point_of_explosion: Vector2 = nearest_projectile.position + \
                     (original_velocity
@@ -209,17 +303,101 @@ class Wizard_TeamA(Character):
                 explosion = Explosion(nearest_projectile.owner, nearest_projectile.owner.world, nearest_projectile.explosive_image,
                                       1000, point_of_explosion, nearest_projectile.owner.team_id)
                 # set the x and y coordinate of the explosion (for some reason doesnt set it automatically)
-                explosion.rect.left = point_of_explosion.x
-                explosion.rect.top = point_of_explosion.y
+                w, h = explosion.image.get_size()
+                explosion.rect.x = point_of_explosion.x - w/2
+                explosion.rect.y = point_of_explosion.y - h/2
                 collide_list = pygame.sprite.spritecollide(
                     explosion, self.world.entities.values(), False)
-
+                explosion_position = Vector2(
+                    explosion.rect.x, explosion.rect.y)
+                distance_until_explode = point_of_explosion.length() - explosion_position.length()
                 if self in collide_list:
-                    # TODO: find best direction to dodge and check if there are obstacles in the way
-                    y_velocity = self.velocity.y
-                    self.velocity.x *= -1
-                    self.velocity.y = self.velocity.x
-                    self.velocity.x = y_velocity
+                    projectile_velocity = Vector2(
+                        nearest_projectile.velocity.x, nearest_projectile.velocity.y)
+                    y_velocity = projectile_velocity.y
+                    projectile_velocity.x *= -1
+                    projectile_velocity.y = projectile_velocity.x
+                    projectile_velocity.x = y_velocity
+                    fake_velocity = Vector2(
+                        projectile_velocity.x, projectile_velocity.y)
+                    fake_rect = self.rect.copy()
+                    character_original_velocity = fake_velocity / self.maxSpeed
+                    for i in range(int(distance_until_explode)):
+                        fake_rect.x = self.position.x + \
+                            (character_original_velocity.x * i)
+                        fake_rect.y = self.position.y + \
+                            (character_original_velocity.y * i)
+                        fake_rect_position = Vector2(
+                            fake_rect.x, fake_rect.y)
+                        # if possible to dodge
+                        if not (explosion.rect.colliderect(fake_rect)) \
+                                and not check_for_obstacles(fake_rect, self.world.obstacles) \
+                                and not check_screen_edge(fake_rect_position):
+                            # dodge 90 degree clockwise from the projectile
+                            #self.velocity.x *= -1
+                            #self.velocity.y = self.velocity.x
+                            #self.velocity.x = y_velocity
+                            self.velocity = fake_rect_position - self.position
+                            self.velocity.normalize_ip()
+                            self.velocity *= self.maxSpeed
+                            return
+                    projectile_velocity = Vector2(
+                        nearest_projectile.velocity.x, nearest_projectile.velocity.y)
+                    x_velocity = projectile_velocity.x
+                    projectile_velocity.y *= -1
+                    projectile_velocity.x = projectile_velocity.y
+                    projectile_velocity.y = x_velocity
+                    fake_velocity = Vector2(
+                        projectile_velocity.x, projectile_velocity.y)
+                    fake_rect = self.rect.copy()
+                    character_original_velocity = fake_velocity / self.maxSpeed
+                    for j in range(int(distance_until_explode)):
+                        fake_rect.x = self.position.x + \
+                            (character_original_velocity.x * j)
+                        fake_rect.y = self.position.y + \
+                            (character_original_velocity.y * j)
+                        fake_rect_position = Vector2(
+                            fake_rect.x, fake_rect.y)
+                        # if possible to dodge
+                        if not (explosion.rect.colliderect(fake_rect)) \
+                                and not check_for_obstacles(fake_rect, self.world.obstacles) \
+                                and not check_screen_edge(fake_rect_position):
+                            # dodge 90 degree clockwise from the projectile
+                            #self.velocity.x *= -1
+                            #self.velocity.y = self.velocity.x
+                            #self.velocity.x = y_velocity
+                            self.velocity = fake_rect_position - self.position
+                            self.velocity.normalize_ip()
+                            self.velocity *= self.maxSpeed
+                            return
+                    projectile_velocity = Vector2(
+                        nearest_projectile.velocity.x, nearest_projectile.velocity.y)
+                    x_velocity = projectile_velocity.x
+                    projectile_velocity.y *= -1
+                    projectile_velocity.x *= -1
+                    fake_velocity = Vector2(
+                        projectile_velocity.x, projectile_velocity.y)
+                    fake_rect = self.rect.copy()
+                    character_original_velocity = fake_velocity / self.maxSpeed
+                    for k in range(int(distance_until_explode)):
+                        fake_rect.x = self.position.x + \
+                            (character_original_velocity.x * k)
+                        fake_rect.y = self.position.y + \
+                            (character_original_velocity.y * k)
+                        fake_rect_position = Vector2(
+                            fake_rect.x, fake_rect.y)
+                        # if possible to dodge
+                        if not (explosion.rect.colliderect(fake_rect)) \
+                                and not check_for_obstacles(fake_rect, self.world.obstacles) \
+                                and not check_screen_edge(fake_rect_position):
+                            # dodge 90 degree clockwise from the projectile
+                            #self.velocity.x *= -1
+                            #self.velocity.y = self.velocity.x
+                            #self.velocity.x = y_velocity
+                            self.velocity = fake_rect_position - self.position
+                            self.velocity.normalize_ip()
+                            self.velocity *= self.maxSpeed
+                            return
 
     def render(self, surface):
 
@@ -233,11 +411,12 @@ class Wizard_TeamA(Character):
         level_up_stats: typing.List[str] = [
             "hp", "speed", "ranged damage", "ranged cooldown", "projectile range"]
         if self.can_level_up():
-            if (self.level < 2):
-                self.level_up("speed")
-            else:
-                # TODO: check if ranged damange > ranged cooldown
-                self.level_up("ranged damage")
+            self.level_up("speed")
+            # if (self.level < 2):
+            #    self.level_up("speed")
+            # else:
+            #    # TODO: check if ranged damange > ranged cooldown
+            #    self.level_up("ranged damage")
             self.level += 1
 
 
