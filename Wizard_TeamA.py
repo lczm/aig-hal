@@ -189,12 +189,10 @@ class Wizard_TeamA(Character):
         level_up_stats: typing.List[str] = [
             "hp", "speed", "ranged damage", "ranged cooldown", "projectile range"]
         if self.can_level_up():
-            self.level_up("speed")
-            # if (self.level < 2):
-            #    self.level_up("speed")
-            # else:
-            #    # TODO: check if ranged damange > ranged cooldown
-            #    self.level_up("ranged damage")
+            if (self.level < 1):
+                self.level_up("speed")
+            else:
+                self.level_up("ranged damage")
             self.level += 1
 
 
