@@ -149,6 +149,13 @@ class Archer_TeamA(Character):
     def render(self, surface) -> None:
         Character.render(self, surface)
 
+        for i in range(0, len(self.path) - 1):
+            from_position: Vector2 = self.path[i].fromNode.position
+            to_position: Vector2 = self.path[i].toNode.position
+
+            draw_circle_at_position(from_position, surface, (0, 255, 0))
+            draw_circle_at_position(to_position, surface, (0, 255, 0))
+
         from_position: Vector2 = self.path[self.current_connection].fromNode.position
         to_position: Vector2 = self.path[self.current_connection].toNode.position
 
@@ -170,7 +177,7 @@ class Archer_TeamA(Character):
         # ]
 
         if self.can_level_up():
-            if self.levels < 1:
+            if self.levels < 2:
                 self.level_up("speed")
             else:
                 self.level_up("ranged cooldown")
@@ -202,6 +209,11 @@ class ArcherStateSeeking_TeamA(State):
                 ].toNode.position
 
                 self.archer.on_base_kiting_path = False
+        elif self.archer.at_end_of_connection():
+            self.archer.path_graph = get_graph(self.archer, 
+                                                self.archer.path_graph, 
+                                                get_lane(get_nearest_node_global_ignoring_base(self.archer.paths, self.archer.position).id))
+            self.archer.path = get_path_to_enemy_base_from_my_base(self.archer, self.archer.path_graph)
 
         self.archer.velocity = self.archer.move_target.position - self.archer.position
         if self.archer.velocity.length() > 0:
@@ -209,6 +221,7 @@ class ArcherStateSeeking_TeamA(State):
             self.archer.velocity *= self.archer.maxSpeed
 
         dodge_projectile(self.archer)
+        print("seeking")
 
     def check_conditions(self) -> str:
         # if not full health, can heal, and no enemies within range
@@ -232,7 +245,6 @@ class ArcherStateSeeking_TeamA(State):
                 self.archer.current_connection = len(self.archer.path) - 1
                 print("switching to reposition 1")
                 return "reposition"
-
 
         if (self.archer.on_base_kiting_path is False and
             (self.archer.position - self.archer.base.position).length() > 400):
@@ -383,6 +395,7 @@ class ArcherStateAttacking_TeamA(State):
             self.archer.velocity.normalize_ip()
             self.archer.velocity *= self.archer.maxSpeed
         dodge_projectile(self.archer)
+        print("attacking")
 
     def check_conditions(self) -> str:
         # If less than 50% hp and can heal, and at an adequate distance to run
@@ -448,6 +461,7 @@ class ArcherStateFleeing_TeamA(State):
         if not self.archer.can_heal() and self.archer.has_target():
             return "attacking"
 
+        print("fleeing")
         return None
 
     def entry_actions(self):
@@ -460,11 +474,18 @@ class ArcherRepositionState_TeamA(State):
         self.archer: Archer_TeamA = archer
     
     def do_actions(self) -> None:
+        # otherwise, continue on path
+        if self.archer.connection_not_at_start() and self.archer.at_node():
+            self.archer.decrement_connection()
+            self.archer.set_move_target_from_node()
+
         self.archer.set_velocity()
         if self.archer.velocity.length() > 0:
             self.archer.velocity.normalize_ip()
             self.archer.velocity *= self.archer.maxSpeed
         dodge_projectile(self.archer)
+
+        print("reposition")
         return None
 
     def check_conditions(self) -> str:
@@ -484,11 +505,6 @@ class ArcherRepositionState_TeamA(State):
                 self.archer.path_graph = get_graph(self.archer, self.archer.path_graph, self.archer.max_lane)
             self.archer.path = get_path_to_enemy_base(self.archer, self.archer.path_graph, self.archer.position)
             return "seeking"
-
-        # otherwise, continue on path
-        if self.archer.connection_not_at_start() and self.archer.at_node():
-            self.archer.decrement_connection()
-            self.archer.set_move_target_from_node()
         return None
 
     def entry_actions(self) -> None:
