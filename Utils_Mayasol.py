@@ -11,11 +11,13 @@ BOT_PATH = 1
 MID_TOP_PATH = 2
 MID_BOT_PATH = 3
 
-MAIN_CHARACTER_SCORE: int = 4
+KNIGHT_SCORE: int = 4
+ARCHER_SCORE: int = 4
+WIZARD_SCORE: int = 6
 CHARACTER_SCORING: Dict[str, int] = {
-    "knight": MAIN_CHARACTER_SCORE,
-    "archer": MAIN_CHARACTER_SCORE,
-    "wizard": MAIN_CHARACTER_SCORE,
+    "knight": KNIGHT_SCORE,
+    "archer": ARCHER_SCORE,
+    "wizard": WIZARD_SCORE,
     "orc": 1,
 }
 
