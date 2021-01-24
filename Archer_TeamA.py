@@ -472,12 +472,6 @@ class ArcherRepositionState_TeamA(State):
 
         # If at the start of the path, get a new path and go back to seeking
         if self.archer.at_start_of_connection() and self.archer.at_node():
-            # highest_threat_lane = get_highest_lane_threat(self.archer.paths, self.archer)
-            # current_lane: Lane = get_lane_character(self.archer.path_graph, self.archer)
-
-            # if current_lane != highest_threat_lane:
-            #     self.archer.max_lane = highest_threat_lane
-
             # Default lane, which is nothing
             if self.archer.max_lane == 0:
                 self.archer.path_graph = get_graph(self.archer, self.archer.path_graph, Lane.Mid)
@@ -511,14 +505,17 @@ class ArcherStateKO_TeamA(State):
         if self.archer.current_respawn_time <= 0:
             self.archer.current_respawn_time = self.archer.respawn_time
             self.archer.ko = False
-            # self.archer.path_graph = self.archer.world.paths[
-            #     randint(0, len(self.archer.world.paths) - 1)
+
+            # self.archer.path_graph = self.archer.paths[
+            #     randint(0, len(self.archer.paths) - 1)
             # ]
-            self.archer.path_graph = self.archer.paths[
-                randint(0, len(self.archer.paths) - 1)
-            ]
+            # self.archer.path = get_path_to_enemy_base(self.archer, self.archer.path_graph, self.archer.position)
+
+            self.archer.max_lane = get_highest_lane_threat(self.archer.paths, self.archer)
+            self.archer.path_graph = get_graph(self.archer, self.archer.path_graph, self.archer.max_lane)
             self.archer.path = get_path_to_enemy_base(self.archer, self.archer.path_graph, self.archer.position)
             self.archer.current_connection = 0
+
             return "seeking"
         return None
 
