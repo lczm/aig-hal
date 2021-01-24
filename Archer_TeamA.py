@@ -218,11 +218,28 @@ class ArcherStateSeeking_TeamA(State):
 
         if (get_amount_of_enemies_in_range(self.archer.base, 300) > 0 and
             (self.archer.base.position - self.archer.position).length() > 300):
+            self.archer.path_graph = get_graph(self.archer, 
+                                                self.archer.path_graph, 
+                                                get_lane(get_nearest_node_global_ignoring_base(self.archer.paths, self.archer.position).id))
+            self.archer.path = get_path_from_base_to_position(self.archer, self.archer.path_graph)
+            self.archer.current_connection = len(self.archer.path) - 1
             return "reposition"
 
         if (self.archer.on_base_kiting_path is False and
-            (self.archer.position - self.archer.base.position).length() > 500):
-            return "reposition"
+            (self.archer.position - self.archer.base.position).length() > 400):
+
+            highest_threat_lane = get_highest_lane_threat(self.archer.paths, self.archer)
+            current_lane: Lane = get_lane_character(self.archer.path_graph, self.archer)
+
+            if current_lane != highest_threat_lane:
+                self.archer.max_lane = highest_threat_lane
+
+                self.archer.path_graph = get_graph(self.archer, 
+                                                    self.archer.path_graph, 
+                                                    get_lane(get_nearest_node_global_ignoring_base(self.archer.paths, self.archer.position).id))
+                self.archer.path = get_path_from_base_to_position(self.archer, self.archer.path_graph)
+                self.archer.current_connection = len(self.archer.path) - 1
+                return "reposition"
 
         # check if opponent is in range
         nearest_opponent = self.archer.world.get_nearest_opponent(self.archer)
@@ -447,13 +464,17 @@ class ArcherRepositionState_TeamA(State):
 
         # If at the start of the path, get a new path and go back to seeking
         if self.archer.at_start_of_connection() and self.archer.at_node():
-            highest_threat_lane = get_highest_lane_threat(self.archer.paths, self.archer)
-            current_lane: Lane = get_lane_character(self.archer.path_graph, self.archer)
+            # highest_threat_lane = get_highest_lane_threat(self.archer.paths, self.archer)
+            # current_lane: Lane = get_lane_character(self.archer.path_graph, self.archer)
 
-            if current_lane != highest_threat_lane:
-                self.archer.max_lane = highest_threat_lane
+            # if current_lane != highest_threat_lane:
+            #     self.archer.max_lane = highest_threat_lane
 
-            self.archer.path_graph = get_graph(self.archer, self.archer.path_graph, self.archer.max_lane)
+            # Default lane, which is nothing
+            if self.archer.max_lane == 0:
+                self.archer.path_graph = get_graph(self.archer, self.archer.path_graph, Lane.Mid)
+            else:
+                self.archer.path_graph = get_graph(self.archer, self.archer.path_graph, self.archer.max_lane)
             self.archer.path = get_path_to_enemy_base(self.archer, self.archer.path_graph, self.archer.position)
             return "seeking"
 

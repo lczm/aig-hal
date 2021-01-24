@@ -322,6 +322,10 @@ def get_relative_lane_threat(
         if entity.name == "base" or entity.name == "tower":
             continue
 
+        # Dont count 'myself' into the calculations
+        if entity.id == person.id:
+            continue
+
         # there is an entity, it is either my team or the opponent's
         # get closest node for this entity
         node: Node = get_nearest_node_global_ignoring_base(paths, entity.position)
