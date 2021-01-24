@@ -177,7 +177,7 @@ class Archer_TeamA(Character):
         # ]
 
         if self.can_level_up():
-            if self.levels < 2:
+            if self.levels < 1:
                 self.level_up("speed")
             else:
                 self.level_up("ranged cooldown")
@@ -411,7 +411,15 @@ class ArcherStateAttacking_TeamA(State):
             or self.archer.target.ko
         ):
             self.archer.target = None
-            return "seeking"
+
+            if get_amount_of_enemies_in_range(self.archer.base, 300) > 0:
+                self.archer.path_graph = get_graph(self.archer, 
+                                                    self.archer.path_graph, 
+                                                    get_lane(get_nearest_node_global_ignoring_base(self.archer.paths, self.archer.position).id))
+                self.archer.path = get_path_to_enemy_base_from_my_base(self.archer, self.archer.path_graph)
+                return "reposition"
+            else:
+                return "seeking"
         
         # if the opponent is too far away from me
         opponent_distance = (
