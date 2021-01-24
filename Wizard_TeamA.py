@@ -38,7 +38,6 @@ class Wizard_TeamA(Character):
         self.min_target_distance: int = 100
         self.projectile_range: int = 100
         self.projectile_speed: int = 100
-        self.xp = 1000
 
         seeking_state: WizardStateSeeking_TeamA = WizardStateSeeking_TeamA(
             self)
@@ -176,7 +175,7 @@ class Wizard_TeamA(Character):
 
         print("using random graph")
         # go bot if no knight
-        return self.world.paths[1]
+        return self.world.paths[2]
 
     def dodge_projectile(self):
         nearest_projectile: GameEntity = get_nearest_projectile(self)
@@ -225,8 +224,6 @@ class Wizard_TeamA(Character):
                                     and not check_for_obstacles(fake_rect, self.world.obstacles) \
                                     and not check_screen_edge(fake_rect_position):
                                 # dodge 90 degree clockwise from the projectile
-                                self.fake_rect = fake_rect
-                                print("clockwise")
                                 self.velocity = fake_rect_position - self.position
                                 self.velocity.normalize_ip()
                                 self.velocity *= self.maxSpeed
@@ -255,8 +252,6 @@ class Wizard_TeamA(Character):
                                     and not check_for_obstacles(fake_rect, self.world.obstacles) \
                                     and not check_screen_edge(fake_rect_position):
                                 # dodge 90 degree counterclockwise from the projectile
-                                print("counterclockwise")
-                                self.fake_rect = fake_rect
                                 self.velocity = fake_rect_position - self.position
                                 self.velocity.normalize_ip()
                                 self.velocity *= self.maxSpeed
@@ -308,8 +303,6 @@ class Wizard_TeamA(Character):
                             #self.velocity.x *= -1
                             #self.velocity.y = self.velocity.x
                             #self.velocity.x = y_velocity
-                            print("clockwise")
-                            self.explosion = explosion.rect
                             self.velocity = fake_rect_position - self.position
                             self.velocity.normalize_ip()
                             self.velocity *= self.maxSpeed
@@ -339,8 +332,6 @@ class Wizard_TeamA(Character):
                             #self.velocity.x *= -1
                             #self.velocity.y = self.velocity.x
                             #self.velocity.x = y_velocity
-                            print("counterclockwise")
-                            self.explosion = explosion.rect
                             self.velocity = fake_rect_position - self.position
                             self.velocity.normalize_ip()
                             self.velocity *= self.maxSpeed
@@ -367,8 +358,6 @@ class Wizard_TeamA(Character):
                             #self.velocity.x *= -1
                             #self.velocity.y = self.velocity.x
                             #self.velocity.x = y_velocity
-                            print("behind")
-                            self.explosion = explosion.rect
                             self.velocity = fake_rect_position - self.position
                             self.velocity.normalize_ip()
                             self.velocity *= self.maxSpeed
@@ -386,12 +375,6 @@ class Wizard_TeamA(Character):
     def render(self, surface):
 
         Character.render(self, surface)
-        if hasattr(self, "projectile_rect"):
-            pygame.draw.rect(surface, (255, 0, 0), self.projectile_rect)
-        if hasattr(self, "fake_rect"):
-            pygame.draw.rect(surface, (255, 0, 0), self.fake_rect)
-        if hasattr(self, "explosion"):
-            pygame.draw.rect(surface, (255, 0, 0), self.explosion)
 
     def process(self, time_passed):
 
