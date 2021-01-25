@@ -31,8 +31,8 @@ class Archer_TeamA(Character):
 
         self.max_lane: Lane = 0
 
-        self.paths: List[Graph] = generate_pathfinding_graphs("more_pathfinding_nodes.txt", self)
-        self.path_graph: Graph = self.paths[0]
+        self.paths: List[Graph] = generate_pathfinding_graphs("pathfinding_mayasol.txt", self)
+        self.path_graph: Graph = self.paths[1]
         self.path: List[Connection] = get_path_to_enemy_base(self, self.path_graph, self.position)
 
         self.on_base_kiting_path: bool = False
