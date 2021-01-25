@@ -574,10 +574,10 @@ def get_opponent_in_range(person: Character) -> Character:
     # where the distance between a and b is very little
     # and i am already shooting at one of them, and the distance is
     # too short to care, there is no point to switch targets
-    if person.target is not None and nearest_opponent is not None:
-        if nearest_opponent.id != person.target.id:
-            if (nearest_opponent.position - person.target.position).length() < 15:
-                return person.target
+    # if person.target is not None and nearest_opponent is not None:
+    #     if nearest_opponent.id != person.target.id:
+    #         if (nearest_opponent.position - person.target.position).length() < 15:
+    #             return person.target
 
     return nearest_opponent
 
@@ -607,6 +607,38 @@ def get_amount_of_enemies_in_range(person: Character, range: float):
 
     return amount
 
+
+def get_amount_of_enemies_in_range_by_score(person: Character, range: float) -> Dict[Lane, int]:
+    enemy_positions_in_lane: Dict[Lane, int] = {}
+
+    paths: List[Graph]
+    if hasattr(person, "paths"):
+        paths = person.paths
+    else:
+        paths = person.world.paths
+
+    entity: Character
+    for entity in person.world.entities.values():
+        # neutral entity
+        if entity.team_id == 2:
+            continue
+        # same team
+        if entity.team_id == person.team_id:
+            continue
+        # projectile or explosion
+        if entity.name == "projectile" or entity.name == "explosion":
+            continue
+        # dead
+        if entity.ko:
+            continue
+
+        # Get the distance away from the entity
+        current_distance: float = (person.position - entity.position).length()
+        if current_distance <= range:
+            enemy_lane: Lane = get_lane(get_nearest_node_global(paths))
+            enemy_positions_in_lane[enemy_lane] += get_character_score(entity)
+
+    return enemy_positions_in_lane
 
 def get_current_connection_at_position_to_node(person: Character) -> int:
     paths: List[Graph]

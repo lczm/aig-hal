@@ -18,11 +18,15 @@ class Knight_TeamMayasol(Character):
         self.move_target = GameEntity(world, "knight_move_target", None)
         self.target = None
         self.enemy_decoy = None
+
+        self.paths = generate_pathfinding_graphs("pathfinding_mayasol.txt", self)
+        self.path_graph = self.paths[1]
+        self.path = get_path_to_enemy_base(self, self.path_graph, self.position)
         self.world = world
 
         self.maxSpeed = 80
         self.min_target_distance = 100
-        self.min_defence_distance = 175
+        self.min_defence_distance = 250
         self.melee_damage = 20
         self.melee_cooldown = 2.
         self.enemy_locations = get_enemies_positions_in_lanes(self.world.paths, self)
@@ -123,7 +127,7 @@ class KnightStateSeeking_TeamMayasol(State):
         if (self.knight.position - self.knight.move_target.position).length() < 8:
             # continue on path
             if self.current_connection < self.path_length:
-                self.knight.move_target.position = self.path[self.current_connection].toNode.position
+                self.knight.move_target.position = self.knight.path[self.current_connection].toNode.position
                 self.current_connection += 1
             
         return None
@@ -133,17 +137,12 @@ class KnightStateSeeking_TeamMayasol(State):
         self.knight.target = None
 
         #node-to-node pathfinding
-        self.path = get_path_to_enemy_base(self.knight, self.knight.path_graph, self.knight.position)
-
-        if self.path is None:
-            self.path_length = 0
-        else:
-            self.path_length = len(self.path)
-
+        self.knight.path = get_path_to_enemy_base(self.knight, self.knight.path_graph, self.knight.position)
+        self.path_length = len(self.knight.path)
         self.current_connection = 0
 
         if (self.path_length > 0):
-            self.knight.move_target.position = self.path[0].fromNode.position
+            self.knight.move_target.position = self.knight.path[0].fromNode.position
         else:
             self.knight.move_target.position = self.knight.path_graph.nodes[self.knight.base.target_node_index].position
 
@@ -191,7 +190,7 @@ class KnightStateAttacking_TeamMayasol(State):
         if (self.knight.position - self.knight.move_target.position).length() < 8:
             #continue on path, and track the latest node passed
             if self.current_connection < self.path_length:
-                self.knight.move_target.position = self.path[self.current_connection].toNode.position
+                self.knight.move_target.position = self.knight.path[self.current_connection].toNode.position
                 self.current_connection += 1
 
         #if hitting base, keep hitting and dont run
@@ -223,17 +222,12 @@ class KnightStateAttacking_TeamMayasol(State):
 
     def entry_actions(self):
         
-        self.path = get_path_to_my_base(self.knight, self.knight.path_graph, self.knight.position)
-
-        if self.path is None:
-            self.path_length = 0
-        else:
-            self.path_length = len(self.path)
-
+        self.knight.path = get_path_to_my_base(self.knight, self.knight.path_graph, self.knight.position)
+        self.path_length = len(self.knight.path)
         self.current_connection = 0
 
         if (self.path_length > 0):
-            self.knight.move_target.position = self.path[0].fromNode.position
+            self.knight.move_target.position = self.knight.path[0].fromNode.position
         else:
             self.knight.move_target.position = self.knight.path_graph.nodes[self.knight.base.spawn_node_index].position
 
@@ -304,7 +298,7 @@ class KnightStateFleeing_TeamMayasol(State):
         if (self.knight.position - self.knight.move_target.position).length() < 8:
             #continue on path
             if self.current_connection < self.path_length:
-                self.knight.move_target.position = self.path[self.current_connection].toNode.position
+                self.knight.move_target.position = self.knight.path[self.current_connection].toNode.position
                 self.current_connection += 1
 
         #in defense mode
@@ -334,17 +328,12 @@ class KnightStateFleeing_TeamMayasol(State):
         self.knight.enemy_decoy = None
 
         # generate path upon fleeing
-        self.path = get_path_to_my_base(self.knight, self.knight.path_graph, self.knight.position)
-
-        if self.path is None:
-            self.path_length = 0
-        else:
-            self.path_length = len(self.path)
-
+        self.knight.path = get_path_to_my_base(self.knight, self.knight.path_graph, self.knight.position)
+        self.path_length = len(self.knight.path)
         self.current_connection = 0
 
         if (self.path_length > 0):
-            self.knight.move_target.position = self.path[0].fromNode.position
+            self.knight.move_target.position = self.knight.path[0].fromNode.position
         else:
             self.knight.move_target.position = self.knight.path_graph.nodes[self.knight.base.spawn_node_index].position
 
