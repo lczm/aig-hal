@@ -663,9 +663,9 @@ def draw_circle_at_position(position: Vector2, surface: pygame.Surface,
     return None
 
 
-def dodge_projectile(person: Character, explosion_dodge_backward: bool = True):
+def dodge_projectile(person: Character, dodge_explosion: bool = True, explosion_dodge_backward: bool = True):
     nearest_projectile: GameEntity = get_nearest_projectile(person)
-    if nearest_projectile is not None and not nearest_projectile.name == "explosion":
+    if dodge_explosion and nearest_projectile is not None and not nearest_projectile.name == "explosion":
         distance_from_origin: Vector2 = nearest_projectile.position - \
             nearest_projectile.origin_position
         distance_until_despawn: float = nearest_projectile.max_range - \
