@@ -472,7 +472,7 @@ class ArcherStateFleeing_TeamMayasol(State):
         return None
 
     def check_conditions(self) -> str:
-        if not self.archer.can_heal() and self.archer.current_hp > (self.archer.max_hp / 100 * 70):
+        if self.archer.current_hp > (self.archer.max_hp / 100 * 70):
             return "seeking"
         
         # If cant heal, there is no point in staying in the fleeing state, just
