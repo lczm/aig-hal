@@ -158,6 +158,36 @@ class Wizard_TeamMayasol(Character):
             (self.target.velocity * projectile_explode_time)
         return predicted_point
 
+    def predict_enemy_location(self, enemy: Character) -> Vector2:
+        distance_from_target: Vector2 = self.position - enemy.position
+        projectile_explode_time: float = distance_from_target.length() / \
+            self.projectile_speed
+        predicted_point: Vector2 = enemy.position + \
+            (enemy.velocity * projectile_explode_time)
+        return predicted_point
+
+    def predict_maximum_damage_area(self) -> Vector2:
+        enemy_list: List[Character] = get_enemies_in_range(
+            self, self.projectile_range)
+        predicted_positions: List[Vector2] = []
+
+        for entity in enemy_list:
+            predicted_point = self.predict_enemy_location(entity)
+            predicted_positions.append(predicted_point)
+
+        for i in range(len(enemy_list)):
+            for j in range(len(enemy_list)):
+                # 96 as rect of explosion is that size
+                if (predicted_positions[i] - predicted_positions[j]).length() <= 96:
+                    x = (predicted_positions[i].x +
+                         predicted_positions[j].x) / 2
+                    y = (predicted_positions[i].y +
+                         predicted_positions[j].y) / 2
+                    maximum_damage_point = Vector2(x, y)
+                    return maximum_damage_point
+
+        return self.predict_target_location()
+
     def grouped_with_knight(self) -> bool:
         knight_lane: Lane
         entity: Character
@@ -322,7 +352,7 @@ class WizardStateAttacking_TeamMayasol(State):
             if self.wizard.within_attack_range(opponent_distance):
                 self.wizard.velocity = Vector2(0, 0)
                 self.wizard.ranged_attack(
-                    self.wizard.predict_target_location(), self.wizard.explosion_image)
+                    self.wizard.predict_maximum_damage_area(), self.wizard.explosion_image)
 
                 if self.wizard.at_node() and self.wizard.connection_not_at_start():
                     self.wizard.decrement_connection()
