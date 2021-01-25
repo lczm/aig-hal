@@ -259,7 +259,7 @@ class ArcherStateSeeking_TeamA(State):
                 return "reposition"
 
         # check if opponent is in range
-        nearest_opponent = self.archer.world.get_nearest_opponent(self.archer)
+        nearest_opponent = get_opponent_in_range(self.archer)
         if nearest_opponent is not None:
             opponent_distance = (
                 self.archer.position - nearest_opponent.position
@@ -288,10 +288,6 @@ class ArcherStateAttacking_TeamA(State):
         self.archer: Archer_TeamA = archer
 
     def do_actions(self):
-        # TODO : once changed, check surrounding radius by a certain amount
-        # If enemy hp is (one-hit) status, change target to that
-
-        # nearest_opponent = self.archer.world.get_nearest_opponent(self.archer)
         nearest_opponent = get_opponent_in_range(self.archer)
         if nearest_opponent is not None:
             if (self.archer.position - nearest_opponent.position).length() <= self.archer.min_target_distance:

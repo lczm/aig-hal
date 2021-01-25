@@ -511,6 +511,20 @@ def get_opponent_in_range(person: Character) -> Character:
                         distance = current_distance
                         nearest_opponent = entity
 
+    # Get the distance between them,
+    # if the distance between them is below a certain threshold
+    # there is no point in switching targets
+    # Given a situation where 
+    # me ------  a
+    #            b
+    # where the distance between a and b is very little
+    # and i am already shooting at one of them, and the distance is
+    # too short to care, there is no point to switch targets
+    if person.target is not None and nearest_opponent is not None:
+        if nearest_opponent.id != person.target.id:
+            if (nearest_opponent.position - person.target.position).length() < 15:
+                return person.target
+
     return nearest_opponent
 
 
