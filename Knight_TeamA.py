@@ -101,7 +101,7 @@ class KnightStateSeeking_TeamA(State):
             self.knight.velocity.normalize_ip()
             self.knight.velocity *= self.knight.maxSpeed
 
-        self.knight.enemy_locations = get_enemies_positions_in_lanes(self.knight.world.paths, self.knight)
+        self.knight.enemy_locations = lane_threat(self.knight.world.paths, self.knight)
 
         # heal if knight HP is below 90% when seeking
         if (self.knight.current_hp <= self.knight.max_hp * 0.9):
@@ -186,15 +186,16 @@ class KnightStateAttacking_TeamA(State):
 
 
     def check_conditions(self):
-        #if hitting base, keep hitting and dont run
-        if self.knight.target.brain.active_state == "base_state":
-            return None
-
         if (self.knight.position - self.knight.move_target.position).length() < 8:
             #continue on path, and track the latest node passed
             if self.current_connection < self.path_length:
                 self.knight.move_target.position = self.path[self.current_connection].toNode.position
                 self.current_connection += 1
+                
+        #if hitting base, keep hitting and dont run
+        if self.knight.target.brain.active_state == "base_state":
+            return None
+
 
         # target is gone
         if self.knight.world.get(self.knight.target.id) is None or self.knight.target.ko:
@@ -311,7 +312,8 @@ class KnightStateFleeing_TeamA(State):
                             self.knight.target = nearest_opponent
                             return "attacking"
         else:
-            #switch back to attacking state when there is a nearby enemy and HP > 85%
+            # outside of defense mode
+            # switch back to attacking state when there is a nearby enemy and HP > 85%
             nearest_opponent = self.knight.world.get_nearest_opponent(self.knight)
             if nearest_opponent is not None:
                 opponent_distance = (self.knight.position - nearest_opponent.position).length()
