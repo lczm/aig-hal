@@ -654,6 +654,27 @@ def get_current_connection_at_position_to_node(person: Character) -> int:
     return 0
 
 
+def get_paths_if_exists(person: Character) -> List[Graph]:
+    if hasattr(person, "paths"):
+        return person.paths
+    else:
+        return person.world.paths
+
+
+def is_person_on_lane_with_person_within_range(person: Character, person_search: Character, range: float) -> bool:
+    person_node: Node = get_nearest_node_global_ignoring_base(get_paths_if_exists(person), person.position)
+    person_search_node: Node = get_nearest_node_global_ignoring_base(get_paths_if_exists(person_search), person_search.position)
+
+    person_lane: Lane = get_lane(person_node.id)
+    person_search_lane: Lane = get_lane(person_search_node.id)
+
+    distance: float = (person.position - person_search.position).length()
+
+    if distance <= range and person_lane == person_search_lane:
+        return True
+    return False
+
+
 # Debug function to see where the character is going from/to
 def draw_circle_at_position(position: Vector2, surface: pygame.Surface,
                             color: Tuple[int] = (255, 0, 0)) -> None:
