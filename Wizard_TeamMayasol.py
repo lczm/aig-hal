@@ -25,14 +25,15 @@ class Wizard_TeamMayasol(Character):
         self.target: GameEntity = None
         self.level: int = 0
         self.current_connection: int = 0
-        self.path_graph: Graph = self.world.paths[
-            randint(0, len(self.world.paths) - 1)
-        ]
+        self.paths = generate_pathfinding_graphs(
+            "pathfinding_mayasol.txt", self)
+        self.path_graph: Graph = self.paths[1]
         self.path: List[Connection] = get_path_to_enemy_base(
             self, self.path_graph, self.position)
         self.supporting_knight: bool = True
         self.safe_distance: int = 250
         self.time_passed: float = 0
+        self.danger_radius = 500
 
         self.maxSpeed: int = 50
         self.min_target_distance: int = 100
@@ -43,13 +44,16 @@ class Wizard_TeamMayasol(Character):
             self)
         attacking_state: WizardStateAttacking_TeamMayasol = WizardStateAttacking_TeamMayasol(
             self)
-        ko_state: WizardStateKO_TeamMayasol = WizardStateKO_TeamMayasol(self)
-        fleeing_state: WizardStateFleeing_TeamMayasol = WizardStateFleeing_TeamMayasol(
+        defending_state: WizardStateDefending_TeamMayasol = WizardStateDefending_TeamMayasol(
             self)
+        ko_state: WizardStateKO_TeamMayasol = WizardStateKO_TeamMayasol(self)
+        # fleeing_state: WizardStateFleeing_TeamMayasol = WizardStateFleeing_TeamMayasol(
+        #    self)
 
         self.brain.add_state(seeking_state)
         self.brain.add_state(attacking_state)
-        self.brain.add_state(fleeing_state)
+        self.brain.add_state(defending_state)
+        # self.brain.add_state(fleeing_state)
         self.brain.add_state(ko_state)
 
         self.brain.set_state("seeking")
@@ -78,6 +82,26 @@ class Wizard_TeamMayasol(Character):
         if self.current_connection > 0:
             self.current_connection -= 1
         return None
+
+    def defend(self) -> bool:
+        enemy_lane_scores = get_amount_of_enemies_in_range_by_score(
+            self, self.paths, self.danger_radius)
+        for lane in enemy_lane_scores:
+            # knight(4) + archer(4) + wizard(6)
+            if enemy_lane_scores[lane] >= 11:
+                return True
+
+        return False
+
+    def within_danger_radius(self) -> bool:
+        if (self.position - self.path_graph.nodes[self.base.spawn_node_index].position).length() < self.danger_radius:
+            return True
+        return False
+
+    def close_to_base(self) -> bool:
+        if (self.position - self.path_graph.nodes[self.base.spawn_node_index].position).length() < 40:
+            return True
+        return False
 
     def at_start_of_connection(self) -> bool:
         if self.current_connection == 0:
@@ -170,24 +194,48 @@ class Wizard_TeamMayasol(Character):
                 continue
 
             knight_lane = get_lane_character(entity.path_graph, entity)
-            print("kngiht lane" + str(knight_lane))
             return get_graph(entity, entity.path_graph, knight_lane)
 
-        print("using random graph")
         # go bot if no knight
-        return self.world.paths[2]
+        return self.paths[1]
+
+    def find_knight_lane(self) -> Lane:
+        knight_lane: Lane
+        entity: Character
+
+        for entity in self.world.entities.values():
+            if entity.team_id != self.team_id:
+                continue
+            if entity.name != "knight":
+                continue
+            if entity.ko:
+                continue
+
+            knight_lane = get_lane_character(entity.path_graph, entity)
+            return knight_lane
+
+        return get_lane_character(self.path_graph, self)
 
     def render(self, surface):
-
         Character.render(self, surface)
+        for i in range(0, len(self.path) - 1):
+            from_position: Vector2 = self.path[i].fromNode.position
+            to_position: Vector2 = self.path[i].toNode.position
+
+            draw_circle_at_position(from_position, surface, (0, 255, 0))
+            draw_circle_at_position(to_position, surface, (0, 255, 0))
+
+        from_position: Vector2 = self.path[self.current_connection].fromNode.position
+        to_position: Vector2 = self.path[self.current_connection].toNode.position
+
+        draw_circle_at_position(from_position, surface, (0, 0, 255))
+        draw_circle_at_position(to_position, surface, (255, 0, 0))
 
     def process(self, time_passed):
 
         Character.process(self, time_passed)
         self.time_passed = time_passed
 
-        level_up_stats: typing.List[str] = [
-            "hp", "speed", "ranged damage", "ranged cooldown", "projectile range"]
         if self.can_level_up():
             if (self.level < 1):
                 self.level_up("speed")
@@ -202,10 +250,6 @@ class WizardStateSeeking_TeamMayasol(State):
 
         State.__init__(self, "seeking")
         self.wizard: Wizard_TeamMayasol = wizard
-        # follow knight on startup
-        self.wizard.path_graph = self.wizard.find_knight_lane_graph()
-        self.wizard.path = get_path_to_enemy_base(
-            self.wizard, self.wizard.path_graph, self.wizard.position)
 
     def do_actions(self):
 
@@ -216,9 +260,19 @@ class WizardStateSeeking_TeamMayasol(State):
         dodge_projectile(self.wizard)
 
     def check_conditions(self):
-        if (self.wizard.current_hp < (self.wizard.max_hp / 100 * 50) and
-                self.wizard.can_heal()):
-            return "fleeing"
+
+        if self.wizard.target.__class__.__name__ == "base":
+            return None
+
+        if self.wizard.defend() and not self.wizard.within_danger_radius():
+            self.wizard.path_graph = get_graph(self.wizard,
+                                               self.wizard.path_graph,
+                                               get_lane(get_nearest_node_global_ignoring_base(
+                                                   self.wizard.paths, self.wizard.position).id))
+            self.wizard.path = get_path_from_base_to_position(
+                self.wizard, self.wizard.path_graph)
+            self.wizard.current_connection = len(self.wizard.path) - 1
+            return "defending"
 
         # check if opponent is in range
         nearest_opponent = self.wizard.world.get_nearest_opponent(self.wizard)
@@ -229,18 +283,10 @@ class WizardStateSeeking_TeamMayasol(State):
                 self.wizard.target = nearest_opponent
                 return "attacking"
 
-        # group up with knight if not already grouped
-        # if not self.wizard.grouped_with_knight():
-        #    print("not grouped with knight")
-        #    self.wizard.path_graph = self.wizard.find_knight_lane_graph()
-        #    self.wizard.path = get_path_to_enemy_base(
-        #        self.wizard, self.wizard.path_graph, self.wizard.position)
-        #    self.wizard.current_connection = 0
-
         if (self.wizard.position - self.wizard.move_target.position).length() < 8:
 
             # continue on path
-            if self.wizard.current_connection < len(self.wizard.path) - 1:
+            if self.wizard.connection_not_at_end():
                 self.wizard.increment_connection()
                 self.wizard.move_target.position = self.wizard.path[
                     self.wizard.current_connection].toNode.position
@@ -252,23 +298,6 @@ class WizardStateSeeking_TeamMayasol(State):
             self.wizard.move_target.position = self.wizard.path[
                 self.wizard.current_connection].toNode.position
 
-        # nearest_node = self.wizard.path_graph.get_nearest_node(
-            # self.wizard.position)
-
-        # self.path = pathFindAStar(self.wizard.path_graph,
-            # nearest_node,
-            # self.wizard.path_graph.nodes[self.wizard.base.target_node_index])
-
-        #self.path_length = len(self.path)
-
-        # if (self.path_length > 0):
-            #self.current_connection = 0
-            #self.wizard.move_target.position = self.path[0].fromNode.position
-
-        # else:
-            # self.wizard.move_target.position = self.wizard.path_graph.nodes[
-            # self.wizard.base.target_node_index].position
-
 
 class WizardStateAttacking_TeamMayasol(State):
 
@@ -279,9 +308,10 @@ class WizardStateAttacking_TeamMayasol(State):
 
     def do_actions(self):
 
-        # Set target to nearest opponent
         nearest_opponent = self.wizard.world.get_nearest_opponent(self.wizard)
-        if nearest_opponent is not None:
+        # dont switch target if attacking base
+        if nearest_opponent is not None and not self.wizard.target.__class__.__name__ == "base":
+            # Set target to nearest opponent
             if (self.wizard.position - nearest_opponent.position).length() <= self.wizard.min_target_distance:
                 self.wizard.target = nearest_opponent
 
@@ -320,13 +350,6 @@ class WizardStateAttacking_TeamMayasol(State):
                     self.wizard.decrement_connection()
                 self.wizard.set_move_target_to_node()
 
-            # dodge projectiles
-           # nearest_projectile = get_nearest_projectile(self.wizard)
-           # if nearest_projectile is not None:
-           #     projectile_distance = (self.wizard.position -
-           #                            nearest_projectile.position).length()
-           #     if projectile_distance <= self.wizard.min_target_distance:
-
         self.wizard.set_velocity()
         if self.wizard.velocity.length() > 0:
             self.wizard.velocity.normalize_ip()
@@ -335,10 +358,16 @@ class WizardStateAttacking_TeamMayasol(State):
         dodge_projectile(self.wizard)
 
     def check_conditions(self):
-        if (self.wizard.current_hp < (self.wizard.max_hp / 100 * 50) and
-                self.wizard.can_heal()):
-            return "fleeing"
-        # target is gone
+        if self.wizard.defend() and not self.wizard.within_danger_radius():
+            self.wizard.path_graph = get_graph(self.wizard,
+                                               self.wizard.path_graph,
+                                               get_lane(get_nearest_node_global_ignoring_base(
+                                                   self.wizard.paths, self.wizard.position).id))
+            self.wizard.path = get_path_from_base_to_position(
+                self.wizard, self.wizard.path_graph)
+            self.wizard.current_connection = len(self.wizard.path) - 1
+            return "defending"
+
         if self.wizard.world.get(self.wizard.target.id) is None or self.wizard.target.ko:
             self.wizard.target = None
             return "seeking"
@@ -350,42 +379,46 @@ class WizardStateAttacking_TeamMayasol(State):
         return None
 
 
-class WizardStateFleeing_TeamMayasol(State):
+class WizardStateDefending_TeamMayasol(State):
     def __init__(self, wizard):
 
-        State.__init__(self, "fleeing")
+        State.__init__(self, "defending")
         self.wizard = wizard
 
-    def do_actions(self) -> None:
+    def do_actions(self):
+        self.wizard.heal()
+        self.wizard.set_move_target_from_node()
         if self.wizard.connection_not_at_start() and self.wizard.at_node():
             self.wizard.decrement_connection()
+            self.wizard.set_move_target_from_node()
 
-        self.wizard.set_move_target_from_node()
         self.wizard.set_velocity()
         if self.wizard.velocity.length() > 0:
             self.wizard.velocity.normalize_ip()
             self.wizard.velocity *= self.wizard.maxSpeed
-        self.wizard.heal()
+        dodge_projectile(self.wizard, False, False, False)
         return None
 
-    def check_conditions(self) -> str:
-        if self.wizard.current_hp > (self.wizard.max_hp / 100 * 70):
+    def check_conditions(self):
+        if not self.wizard.defend():
+            self.wizard.path_graph = get_bot_graph(self.wizard)
+            self.wizard.path = get_path_to_enemy_base_from_my_base(
+                self.wizard, self.wizard.path_graph)
             return "seeking"
+        elif self.wizard.within_danger_radius() and self.wizard.close_to_base():
+            nearest_opponent = self.wizard.world.get_nearest_opponent(
+                self.wizard)
+            if nearest_opponent is not None:
+                opponent_distance = (self.wizard.position -
+                                     nearest_opponent.position).length()
+                if opponent_distance <= self.wizard.min_target_distance:
+                    self.wizard.target = nearest_opponent
+                    self.wizard.path = get_path_to_enemy_base_from_my_base(
+                        self.wizard, self.wizard.path_graph)
+                    return "attacking"
 
-        # check if any opponent in the safe distance
-        nearest_opponent = self.wizard.world.get_nearest_opponent(self.wizard)
-        if nearest_opponent is not None:
-            opponent_distance = (self.wizard.position -
-                                 nearest_opponent.position).length()
-            if opponent_distance >= self.wizard.safe_distance:
-                return "seeking"
+    def entry_actions(self):
 
-        if not self.wizard.can_heal() and self.wizard.has_target():
-            return "attacking"
-
-        return None
-
-    def entry_actions(self) -> None:
         return None
 
 
@@ -407,9 +440,11 @@ class WizardStateKO_TeamMayasol(State):
             self.wizard.current_respawn_time = self.wizard.respawn_time
             self.wizard.ko = False
             # follow knight when respawned
-            self.wizard.path_graph = self.wizard.find_knight_lane_graph()
-            self.wizard.path = get_path_to_enemy_base(
-                self.wizard, self.wizard.path_graph, self.wizard.position)
+            self.wizard.path_graph = self.wizard.paths[1]
+            # self.wizard.path = get_path_to_enemy_base(
+            #    self.wizard, self.wizard.path_graph, self.wizard.position)
+            self.wizard.path = get_path_to_enemy_base_from_my_base(
+                self.wizard, self.wizard.path_graph)
             return "seeking"
 
         return None
