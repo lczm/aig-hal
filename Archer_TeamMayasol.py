@@ -32,18 +32,21 @@ class Archer_TeamMayasol(Character):
         self.max_lane: Lane = 0
 
         self.paths: List[Graph] = generate_pathfinding_graphs("pathfinding_mayasol.txt", self)
-        self.path_graph: Graph = self.paths[1]
+        self.path_graph: Graph = self.paths[0]
         self.path: List[Connection] = get_path_to_enemy_base(self, self.path_graph, self.position)
 
         self.on_base_kiting_path: bool = False
-        self.path_base_kite_left: List[Connection] = self.get_path_base_kite_left()
-        self.path_base_kite_right: List[Connection] = self.get_path_base_kite_right()
 
-        seeking_state: ArcherStateAttacking_TeamA = ArcherStateSeeking_TeamA(self)
-        attacking_state: ArcherStateAttacking_TeamA = ArcherStateAttacking_TeamA(self)
-        fleeing_state: ArcherStateFleeing_TeamA = ArcherStateFleeing_TeamA(self)
-        reposition_state: ArcherRepositionState_TeamA = ArcherRepositionState_TeamA(self)
-        ko_state: ArcherStateKO_TeamA = ArcherStateKO_TeamA(self)
+        # self.path_base_kite_left: List[Connection] = self.get_path_base_kite_left()
+        # self.path_base_kite_right: List[Connection] = self.get_path_base_kite_right()
+        self.path_base_kite_left: List[Connection] = None
+        self.path_base_kite_right: List[Connection] = None
+
+        seeking_state: ArcherStateAttacking_TeamMayasol = ArcherStateSeeking_TeamMayasol(self)
+        attacking_state: ArcherStateAttacking_TeamMayasol = ArcherStateAttacking_TeamMayasol(self)
+        fleeing_state: ArcherStateFleeing_TeamMayasol = ArcherStateFleeing_TeamMayasol(self)
+        reposition_state: ArcherRepositionState_TeamMayasol = ArcherRepositionState_TeamMayasol(self)
+        ko_state: ArcherStateKO_TeamMayasol = ArcherStateKO_TeamMayasol(self)
 
         self.brain.add_state(seeking_state)
         self.brain.add_state(attacking_state)
@@ -54,13 +57,23 @@ class Archer_TeamMayasol(Character):
         self.brain.set_state("seeking")
 
     def get_path_base_kite_left(self) -> List[Connection]:
-        connections = generate_series_of_connections(self, [6, 24, 23, 22, 5, 
-                                                     get_initial_start_node(self).id])
+        connections: List[Connection]
+        if self.team_id == 0:
+            connections = generate_series_of_connections(self, [6, 24, 23, 22, 5, 
+                                                        get_initial_start_node(self).id])
+        else:
+            connections = generate_series_of_connections(self, [2, 18, 19, 20, 21, 3,
+                                                        get_initial_start_node(self).id])
         return connections
 
     def get_path_base_kite_right(self) -> List[Connection]:
-        connections = generate_series_of_connections(self, [2, 17, 16, 15, 14, 1,
-                                                     get_initial_start_node(self).id])
+        connections: List[Connection]
+        if self.team_id == 0:
+            connections = generate_series_of_connections(self, [2, 17, 16, 15, 14, 1,
+                                                        get_initial_start_node(self).id])
+        else:
+            connections = generate_series_of_connections(self,[6, 25, 26, 27, 28, 7,
+                                                        get_initial_start_node(self).id])
         return connections
 
     def set_move_target_from_node(self) -> None:
@@ -148,18 +161,18 @@ class Archer_TeamMayasol(Character):
     
     def render(self, surface) -> None:
         Character.render(self, surface)
-        # for i in range(0, len(self.path) - 1):
-        #     from_position: Vector2 = self.path[i].fromNode.position
-        #     to_position: Vector2 = self.path[i].toNode.position
+        for i in range(0, len(self.path) - 1):
+            from_position: Vector2 = self.path[i].fromNode.position
+            to_position: Vector2 = self.path[i].toNode.position
 
-        #     draw_circle_at_position(from_position, surface, (0, 255, 0))
-        #     draw_circle_at_position(to_position, surface, (0, 255, 0))
+            draw_circle_at_position(from_position, surface, (0, 255, 0))
+            draw_circle_at_position(to_position, surface, (0, 255, 0))
 
-        # from_position: Vector2 = self.path[self.current_connection].fromNode.position
-        # to_position: Vector2 = self.path[self.current_connection].toNode.position
+        from_position: Vector2 = self.path[self.current_connection].fromNode.position
+        to_position: Vector2 = self.path[self.current_connection].toNode.position
 
-        # draw_circle_at_position(from_position, surface, (0, 0, 255))
-        # draw_circle_at_position(to_position, surface, (255, 0, 0))
+        draw_circle_at_position(from_position, surface, (0, 0, 255))
+        draw_circle_at_position(to_position, surface, (255, 0, 0))
         return None
 
     def process(self, time_passed) -> None:
@@ -190,12 +203,17 @@ class Archer_TeamMayasol(Character):
             self.levels += 1
 
 
-class ArcherStateSeeking_TeamA(State):
+class ArcherStateSeeking_TeamMayasol(State):
     def __init__(self, archer):
         State.__init__(self, "seeking")
         self.archer: Archer_TeamMayasol = archer
 
     def do_actions(self) -> None:
+        # Because the team_id is set after the object is created
+        if self.archer.path_base_kite_left is None or self.archer.path_base_kite_right is None:
+            self.archer.path_base_kite_left = self.archer.get_path_base_kite_left()
+            self.archer.path_base_kite_right = self.archer.get_path_base_kite_right()
+
         # If using base kiting paths, reset them
         if self.archer.on_base_kiting_path and self.archer.at_end_of_connection():
             if self.archer.at_node():
@@ -217,7 +235,7 @@ class ArcherStateSeeking_TeamA(State):
         if self.archer.velocity.length() > 0:
             self.archer.velocity.normalize_ip()
             self.archer.velocity *= self.archer.maxSpeed
-        dodge_projectile(self.archer)
+        dodge_projectile(self.archer, False, True)
 
     def check_conditions(self) -> str:
         # if not full health, can heal, and no enemies within range
@@ -242,7 +260,7 @@ class ArcherStateSeeking_TeamA(State):
                 return "reposition"
 
         if (self.archer.on_base_kiting_path is False and
-           (self.archer.position - self.archer.base.position).length() > 400):
+           (self.archer.position - self.archer.base.position).length() > 300):
 
             highest_threat_lane = get_highest_lane_threat(self.archer.paths, self.archer)
             current_lane: Lane = get_lane_character(self.archer.path_graph, self.archer)
@@ -280,7 +298,7 @@ class ArcherStateSeeking_TeamA(State):
         return None
 
 
-class ArcherStateAttacking_TeamA(State):
+class ArcherStateAttacking_TeamMayasol(State):
     def __init__(self, archer):
         State.__init__(self, "attacking")
         self.archer: Archer_TeamMayasol = archer
@@ -291,7 +309,7 @@ class ArcherStateAttacking_TeamA(State):
             if (self.archer.position - nearest_opponent.position).length() <= self.archer.min_target_distance:
                 # If the new opponent found is not the same and 
                 # If on kiting path, set back to normal path
-                if nearest_opponent != self.archer.target and self.archer.on_base_kiting_path:
+                if nearest_opponent != self.archer.target and self.archer.on_base_kiting_path and not is_at_base_node(self.archer):
                     self.archer.path_graph = get_graph(self.archer, 
                                                        self.archer.path_graph, 
                                                        get_lane(get_nearest_node_global_ignoring_base(self.archer.paths, self.archer.position).id))
@@ -309,7 +327,8 @@ class ArcherStateAttacking_TeamA(State):
         # If the archer is at the end of the kiting path, move it back towards the base
         if (self.archer.on_base_kiting_path and
             self.archer.at_start_of_connection() and
-            self.archer.at_node()):
+            self.archer.at_node() and
+            not is_at_base_node(self.archer)):
             self.archer.path_graph = get_graph(self.archer, 
                                                 self.archer.path_graph, 
                                                 get_lane(get_nearest_node_global_ignoring_base(self.archer.paths, self.archer.position).id))
@@ -383,7 +402,7 @@ class ArcherStateAttacking_TeamA(State):
         if self.archer.velocity.length() > 0:
             self.archer.velocity.normalize_ip()
             self.archer.velocity *= self.archer.maxSpeed
-        dodge_projectile(self.archer)
+        dodge_projectile(self.archer, False, True)
 
     def check_conditions(self) -> str:
         # If less than 50% hp and can heal, and at an adequate distance to run
@@ -400,7 +419,7 @@ class ArcherStateAttacking_TeamA(State):
         ):
             self.archer.target = None
 
-            if get_amount_of_enemies_in_range(self.archer.base, 400) > 0:
+            if get_amount_of_enemies_in_range(self.archer.base, 400) > 0 and (self.archer.position - self.archer.base.position).length() > 400:
                 self.archer.path_graph = get_graph(self.archer, 
                                                    self.archer.path_graph, 
                                                    get_lane(get_nearest_node_global_ignoring_base(self.archer.paths, self.archer.position).id))
@@ -427,7 +446,7 @@ class ArcherStateAttacking_TeamA(State):
         return None
 
 
-class ArcherStateFleeing_TeamA(State):
+class ArcherStateFleeing_TeamMayasol(State):
     def __init__(self, archer):
         State.__init__(self, "fleeing")
         self.archer: Archer_TeamMayasol = archer
@@ -449,7 +468,7 @@ class ArcherStateFleeing_TeamA(State):
 
         # Heal, it will check if it can heal
         self.archer.heal()
-        dodge_projectile(self.archer)
+        dodge_projectile(self.archer, False, True)
         return None
 
     def check_conditions(self) -> str:
@@ -467,7 +486,7 @@ class ArcherStateFleeing_TeamA(State):
         return None
 
 
-class ArcherRepositionState_TeamA(State):
+class ArcherRepositionState_TeamMayasol(State):
     def __init__(self, archer):
         State.__init__(self, "reposition")
         self.archer: Archer_TeamMayasol = archer
@@ -482,7 +501,7 @@ class ArcherRepositionState_TeamA(State):
         if self.archer.velocity.length() > 0:
             self.archer.velocity.normalize_ip()
             self.archer.velocity *= self.archer.maxSpeed
-        dodge_projectile(self.archer)
+        dodge_projectile(self.archer, False, True)
         return None
 
     def check_conditions(self) -> str:
@@ -510,7 +529,7 @@ class ArcherRepositionState_TeamA(State):
         self.archer.set_move_target_from_node()
         return None
 
-class ArcherStateKO_TeamA(State):
+class ArcherStateKO_TeamMayasol(State):
     def __init__(self, archer):
         State.__init__(self, "ko")
         self.archer: Archer_TeamMayasol = archer
