@@ -18,7 +18,8 @@ class Knight_TeamMayasol(Character):
         self.move_target = GameEntity(world, "knight_move_target", None)
         self.target = None
         self.enemy_decoy = None
-        self.spawn_danger_radius = 550.0
+        self.priority_target = None
+        self.spawn_danger_radius = 700
 
         self.paths = generate_pathfinding_graphs("pathfinding_mayasol.txt", self)
         self.path_graph = self.paths[1]
@@ -172,7 +173,11 @@ class KnightStateAttacking_TeamMayasol(State):
                         self.knight.heal()
 
             #self.knight.velocity = Vector2(0, 0)
-            self.knight.melee_attack(self.knight.target)
+            if (self.knight.priority_target.position - self.knight.position).length() <= self.knight.min_defence_distance:
+                self.knight.melee_attack(self.knight.priority_target)
+            else:
+                self.knight.melee_attack(self.knight.target)
+            
             if self.knight.current_melee_cooldown == self.knight.melee_cooldown:
                 self.knight.velocity = self.knight.move_target.position - self.knight.position
                 if self.knight.velocity.length() > 0:
@@ -207,7 +212,7 @@ class KnightStateAttacking_TeamMayasol(State):
             return None
 
         # target is chasing another character (for bait/decoy situations) -> ignore the target
-        elif self.knight.target.brain.active_state == "attacking" and self.knight.target.target != self.knight:
+        elif self.knight.target.brain.active_state.name == "attacking" and self.knight.target.target != self.knight:
             self.knight.enemy_decoy = self.knight.target
             return "seeking"
             
@@ -222,6 +227,11 @@ class KnightStateAttacking_TeamMayasol(State):
         return None
 
     def entry_actions(self):
+
+        for entity in self.knight.world.entities.values():
+            if entity.team_id == 1 - self.knight.team_id:
+                if entity.name == "wizard":
+                    self.knight.priority_target = entity
 
         self.knight.path = get_path_to_my_base(self.knight, self.knight.path_graph, self.knight.position)
         self.path_length = len(self.knight.path)
@@ -287,14 +297,6 @@ class KnightStateFleeing_TeamMayasol(State):
         self.knight.heal() #heal while fleeing
 
     def check_conditions(self):
-        
-        #goes back to seeking state if knight has nearby ranged ally
-        nearest_ally = self.knight.get_nearest_ranged_ally("wizard")
-        if nearest_ally is not None:
-            ally_distance = (self.knight.position - nearest_ally.position).length()
-            if (self.knight.current_hp >= self.knight.max_hp * 0.8 \
-            and ally_distance <= self.knight.min_target_distance):
-                return "seeking"
 
         if (self.knight.position - self.knight.move_target.position).length() < 8:
             #continue on path
@@ -313,6 +315,14 @@ class KnightStateFleeing_TeamMayasol(State):
                             return "attacking"
         else:
             # outside of defense mode
+            #goes back to seeking state if knight has nearby ranged ally
+            nearest_ally = self.knight.get_nearest_ranged_ally("wizard")
+            if nearest_ally is not None:
+                ally_distance = (self.knight.position - nearest_ally.position).length()
+                if (self.knight.current_hp >= self.knight.max_hp * 0.8 \
+                and ally_distance <= self.knight.min_target_distance):
+                    return "seeking"
+
             # switch back to attacking state when there is a nearby enemy and HP > 85%
             nearest_opponent = self.knight.world.get_nearest_opponent(self.knight)
             if nearest_opponent is not None:
