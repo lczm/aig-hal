@@ -516,6 +516,16 @@ def generate_series_of_connections(person: Character, node_ids: List[int]) -> Li
     return connections
 
 
+def get_knight(person: Character) -> Character:
+    for entity in person.world.entities.values():
+        if entity.team_id != person.team_id:
+            continue
+        if entity.name != "knight":
+            continue
+
+    return entity
+
+
 # This gets an opponent that is within range while being relatively sane,
 # i.e. picks targets that are one shot away
 def get_opponent_in_range(person: Character) -> Character:
@@ -610,7 +620,7 @@ def get_amount_of_enemies_in_range(person: Character, range: float):
 
 def get_amount_of_enemies_in_range_by_score(person: Character, paths: List[Graph], range: float) -> Dict[Lane, int]:
     enemy_positions_in_lane: Dict[Lane, int] = {}
-    
+
     # Set every lane to 0 threat
     for lane in Lane:
         enemy_positions_in_lane[lane] = 0
@@ -633,10 +643,12 @@ def get_amount_of_enemies_in_range_by_score(person: Character, paths: List[Graph
         # Get the distance away from the entity
         current_distance: float = (person.position - entity.position).length()
         if current_distance <= range:
-            enemy_lane: Lane = get_lane(get_nearest_node_global(paths, entity.position))
+            enemy_lane: Lane = get_lane(
+                get_nearest_node_global(paths, entity.position))
             enemy_positions_in_lane[enemy_lane] += get_character_score(entity)
 
     return enemy_positions_in_lane
+
 
 def get_current_connection_at_position_to_node(person: Character) -> int:
     paths: List[Graph]
@@ -682,7 +694,7 @@ def draw_circle_at_position(position: Vector2, surface: pygame.Surface,
     return None
 
 
-def dodge_projectile(person: Character, dodge_explosion: bool = True, dodge_into_existing_explosion:bool = True, explosion_dodge_backward: bool = True):
+def dodge_projectile(person: Character, dodge_explosion: bool = True, dodge_into_existing_explosion: bool = True, explosion_dodge_backward: bool = True):
     nearest_projectile: GameEntity = get_nearest_projectile(person)
     if dodge_explosion and nearest_projectile is not None and not nearest_projectile.name == "explosion":
         distance_from_origin: Vector2 = nearest_projectile.position - \
