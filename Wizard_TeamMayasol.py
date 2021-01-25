@@ -283,6 +283,10 @@ class WizardStateSeeking_TeamMayasol(State):
 
     def do_actions(self):
 
+        # if not attacking and not max hp, heal
+        if (self.wizard.current_hp != self.wizard.max_hp):
+            self.heal()
+
         self.wizard.velocity = self.wizard.move_target.position - self.wizard.position
         if self.wizard.velocity.length() > 0:
             self.wizard.velocity.normalize_ip()
@@ -416,7 +420,8 @@ class WizardStateDefending_TeamMayasol(State):
         self.wizard = wizard
 
     def do_actions(self):
-        self.wizard.heal()
+        if (self.wizard.current_hp != self.wizard.max_hp):
+            self.wizard.heal()
         self.wizard.set_move_target_from_node()
         if self.wizard.connection_not_at_start() and self.wizard.at_node():
             self.wizard.decrement_connection()
