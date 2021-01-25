@@ -148,20 +148,18 @@ class Archer_TeamMayasol(Character):
     
     def render(self, surface) -> None:
         Character.render(self, surface)
+        # for i in range(0, len(self.path) - 1):
+        #     from_position: Vector2 = self.path[i].fromNode.position
+        #     to_position: Vector2 = self.path[i].toNode.position
 
-        for i in range(0, len(self.path) - 1):
-            from_position: Vector2 = self.path[i].fromNode.position
-            to_position: Vector2 = self.path[i].toNode.position
+        #     draw_circle_at_position(from_position, surface, (0, 255, 0))
+        #     draw_circle_at_position(to_position, surface, (0, 255, 0))
 
-            draw_circle_at_position(from_position, surface, (0, 255, 0))
-            draw_circle_at_position(to_position, surface, (0, 255, 0))
+        # from_position: Vector2 = self.path[self.current_connection].fromNode.position
+        # to_position: Vector2 = self.path[self.current_connection].toNode.position
 
-        from_position: Vector2 = self.path[self.current_connection].fromNode.position
-        to_position: Vector2 = self.path[self.current_connection].toNode.position
-
-        draw_circle_at_position(from_position, surface, (0, 0, 255))
-        draw_circle_at_position(to_position, surface, (255, 0, 0))
-
+        # draw_circle_at_position(from_position, surface, (0, 0, 255))
+        # draw_circle_at_position(to_position, surface, (255, 0, 0))
         return None
 
     def process(self, time_passed) -> None:
@@ -219,7 +217,7 @@ class ArcherStateSeeking_TeamA(State):
         if self.archer.velocity.length() > 0:
             self.archer.velocity.normalize_ip()
             self.archer.velocity *= self.archer.maxSpeed
-        dodge_projectile(self.archer, False, False, False)
+        dodge_projectile(self.archer)
 
     def check_conditions(self) -> str:
         # if not full health, can heal, and no enemies within range
@@ -368,13 +366,13 @@ class ArcherStateAttacking_TeamA(State):
         else:
             # if within the range of the opponent, run
             if self.archer.min_target_distance > opponent_distance:
-                self.archer.set_move_target_from_node()
+                # self.archer.set_move_target_from_node()
 
                 if self.archer.connection_not_at_start() and self.archer.at_node(): 
                     self.archer.decrement_connection()
                 self.archer.set_move_target_from_node()
             else:
-                self.archer.set_move_target_to_node()
+                # self.archer.set_move_target_to_node()
 
                 if self.archer.connection_not_at_start() and self.archer.at_node(): 
                     # self.archer.decrement_connection()
@@ -385,7 +383,7 @@ class ArcherStateAttacking_TeamA(State):
         if self.archer.velocity.length() > 0:
             self.archer.velocity.normalize_ip()
             self.archer.velocity *= self.archer.maxSpeed
-        dodge_projectile(self.archer, False, False, False)
+        dodge_projectile(self.archer)
 
     def check_conditions(self) -> str:
         # If less than 50% hp and can heal, and at an adequate distance to run
@@ -451,7 +449,7 @@ class ArcherStateFleeing_TeamA(State):
 
         # Heal, it will check if it can heal
         self.archer.heal()
-        dodge_projectile(self.archer, False, False, False)
+        dodge_projectile(self.archer)
         return None
 
     def check_conditions(self) -> str:
@@ -484,12 +482,12 @@ class ArcherRepositionState_TeamA(State):
         if self.archer.velocity.length() > 0:
             self.archer.velocity.normalize_ip()
             self.archer.velocity *= self.archer.maxSpeed
-        dodge_projectile(self.archer, False, False, False)
+        dodge_projectile(self.archer)
         return None
 
     def check_conditions(self) -> str:
         # If there is an enemy nearby while trying to reposition, just attack the enemy
-        nearest_opponent = self.archer.world.get_nearest_opponent(self.archer)
+        nearest_opponent = get_opponent_in_range(self.archer)
         if nearest_opponent is not None:
             if (self.archer.position - nearest_opponent.position).length() <= self.archer.min_target_distance:
                 self.archer.target = nearest_opponent
