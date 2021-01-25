@@ -443,9 +443,6 @@ def get_highest_lane_threat(
             highest_lane = lane
             highest_threat = threat
 
-    print(relative_threat)
-    print("Highest : ", highest_lane, highest_threat)
-
     return highest_lane
 
 
@@ -539,6 +536,30 @@ def get_knight(person: Character) -> Character:
             continue
 
     return entity
+
+
+def get_enemies_in_range(person: Character, range: float) -> List[Character]:
+    enemy_list: List[Character] = []
+    entity: Character
+    for entity in person.world.entities.values():
+        # neutral entity
+        if entity.team_id == 2:
+            continue
+        # same team
+        if entity.team_id == person.team_id:
+            continue
+        # projectile or explosion
+        if entity.name == "projectile" or entity.name == "explosion":
+            continue
+        # dead
+        if entity.ko:
+            continue
+
+        current_distance: float = (person.position - entity.position).length()
+        if current_distance <= range:
+            enemy_list.append(entity)
+
+    return enemy_list
 
 
 # This gets an opponent that is within range while being relatively sane,
@@ -689,8 +710,10 @@ def get_paths_if_exists(person: Character) -> List[Graph]:
 
 
 def is_person_on_lane_with_person_within_range(person: Character, person_search: Character, range: float) -> bool:
-    person_node: Node = get_nearest_node_global_ignoring_base(get_paths_if_exists(person), person.position)
-    person_search_node: Node = get_nearest_node_global_ignoring_base(get_paths_if_exists(person_search), person_search.position)
+    person_node: Node = get_nearest_node_global_ignoring_base(
+        get_paths_if_exists(person), person.position)
+    person_search_node: Node = get_nearest_node_global_ignoring_base(
+        get_paths_if_exists(person_search), person_search.position)
 
     person_lane: Lane = get_lane(person_node.id)
     person_search_lane: Lane = get_lane(person_search_node.id)
@@ -703,11 +726,13 @@ def is_person_on_lane_with_person_within_range(person: Character, person_search:
 
 
 def is_at_base_node(person: Character) -> bool:
-    base_node: Node = get_nearest_node_global(person.paths, person.base.position)
+    base_node: Node = get_nearest_node_global(
+        person.paths, person.base.position)
     nearest_node: Node = get_nearest_node_global(person.paths, person.position)
 
     base_vec2: Vector2 = Vector2(base_node.position[0], base_node.position[1])
-    near_vec2: Vector2 = Vector2(nearest_node.position[0], nearest_node.position[1])
+    near_vec2: Vector2 = Vector2(
+        nearest_node.position[0], nearest_node.position[1])
 
     if (base_vec2 - near_vec2).length() < 8:
         return True
@@ -810,7 +835,7 @@ def dodge_projectile(person: Character, dodge_explosion: bool = True, dodge_exis
                         * distance_until_despawn)
                 # create a explosion object that isnt in the game so that i can see if it collides with the character
                 explosion = Explosion(nearest_projectile.owner, nearest_projectile.owner.world, nearest_projectile.explosive_image,
-                                    1000, point_of_explosion, nearest_projectile.owner.team_id)
+                                      1000, point_of_explosion, nearest_projectile.owner.team_id)
                 # set the x and y coordinate of the explosion (for some reason doesnt set it automatically)
                 w, h = explosion.image.get_size()
                 explosion.rect.x = point_of_explosion.x - w/2

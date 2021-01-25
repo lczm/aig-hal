@@ -33,7 +33,7 @@ class Wizard_TeamMayasol(Character):
         self.supporting_knight: bool = True
         self.safe_distance: int = 250
         self.time_passed: float = 0
-        self.danger_radius = 500
+        self.danger_radius = 700
 
         self.maxSpeed: int = 50
         self.min_target_distance: int = 100
@@ -47,13 +47,10 @@ class Wizard_TeamMayasol(Character):
         defending_state: WizardStateDefending_TeamMayasol = WizardStateDefending_TeamMayasol(
             self)
         ko_state: WizardStateKO_TeamMayasol = WizardStateKO_TeamMayasol(self)
-        # fleeing_state: WizardStateFleeing_TeamMayasol = WizardStateFleeing_TeamMayasol(
-        #    self)
 
         self.brain.add_state(seeking_state)
         self.brain.add_state(attacking_state)
         self.brain.add_state(defending_state)
-        # self.brain.add_state(fleeing_state)
         self.brain.add_state(ko_state)
 
         self.brain.set_state("seeking")
@@ -85,7 +82,7 @@ class Wizard_TeamMayasol(Character):
 
     def defend(self) -> bool:
         enemy_lane_scores = get_amount_of_enemies_in_range_by_score(
-            self, self.paths, self.danger_radius)
+            self.base, self.paths, self.danger_radius)
         for lane in enemy_lane_scores:
             # knight(4) + archer(4) + wizard(6)
             if enemy_lane_scores[lane] >= 11:
@@ -248,18 +245,18 @@ class Wizard_TeamMayasol(Character):
 
     def render(self, surface):
         Character.render(self, surface)
-        for i in range(0, len(self.path) - 1):
-            from_position: Vector2 = self.path[i].fromNode.position
-            to_position: Vector2 = self.path[i].toNode.position
+        # for i in range(0, len(self.path) - 1):
+        #    from_position: Vector2 = self.path[i].fromNode.position
+        #    to_position: Vector2 = self.path[i].toNode.position
 
-            draw_circle_at_position(from_position, surface, (0, 255, 0))
-            draw_circle_at_position(to_position, surface, (0, 255, 0))
+        #    draw_circle_at_position(from_position, surface, (0, 255, 0))
+        #    draw_circle_at_position(to_position, surface, (0, 255, 0))
 
-        from_position: Vector2 = self.path[self.current_connection].fromNode.position
-        to_position: Vector2 = self.path[self.current_connection].toNode.position
+        #from_position: Vector2 = self.path[self.current_connection].fromNode.position
+        #to_position: Vector2 = self.path[self.current_connection].toNode.position
 
-        draw_circle_at_position(from_position, surface, (0, 0, 255))
-        draw_circle_at_position(to_position, surface, (255, 0, 0))
+        #draw_circle_at_position(from_position, surface, (0, 0, 255))
+        #draw_circle_at_position(to_position, surface, (255, 0, 0))
 
     def process(self, time_passed):
 
@@ -270,7 +267,7 @@ class Wizard_TeamMayasol(Character):
             if (self.level < 1):
                 self.level_up("speed")
             else:
-                self.level_up("ranged damage")
+                self.level_up("ranged cooldown")
             self.level += 1
 
 
@@ -285,7 +282,7 @@ class WizardStateSeeking_TeamMayasol(State):
 
         # if not attacking and not max hp, heal
         if (self.wizard.current_hp != self.wizard.max_hp):
-            self.heal()
+            self.wizard.heal()
 
         self.wizard.velocity = self.wizard.move_target.position - self.wizard.position
         if self.wizard.velocity.length() > 0:
