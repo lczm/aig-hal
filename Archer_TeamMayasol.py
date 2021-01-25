@@ -217,7 +217,7 @@ class ArcherStateSeeking_TeamA(State):
         if self.archer.velocity.length() > 0:
             self.archer.velocity.normalize_ip()
             self.archer.velocity *= self.archer.maxSpeed
-        dodge_projectile(self.archer, False, False, False)
+        dodge_projectile(self.archer)
 
     def check_conditions(self) -> str:
         # if not full health, can heal, and no enemies within range
@@ -366,13 +366,13 @@ class ArcherStateAttacking_TeamA(State):
         else:
             # if within the range of the opponent, run
             if self.archer.min_target_distance > opponent_distance:
-                self.archer.set_move_target_from_node()
+                # self.archer.set_move_target_from_node()
 
                 if self.archer.connection_not_at_start() and self.archer.at_node(): 
                     self.archer.decrement_connection()
                 self.archer.set_move_target_from_node()
             else:
-                self.archer.set_move_target_to_node()
+                # self.archer.set_move_target_to_node()
 
                 if self.archer.connection_not_at_start() and self.archer.at_node(): 
                     # self.archer.decrement_connection()
@@ -383,7 +383,7 @@ class ArcherStateAttacking_TeamA(State):
         if self.archer.velocity.length() > 0:
             self.archer.velocity.normalize_ip()
             self.archer.velocity *= self.archer.maxSpeed
-        dodge_projectile(self.archer, False, False, False)
+        dodge_projectile(self.archer)
 
     def check_conditions(self) -> str:
         # If less than 50% hp and can heal, and at an adequate distance to run
@@ -449,7 +449,7 @@ class ArcherStateFleeing_TeamA(State):
 
         # Heal, it will check if it can heal
         self.archer.heal()
-        dodge_projectile(self.archer, False, False, False)
+        dodge_projectile(self.archer)
         return None
 
     def check_conditions(self) -> str:
@@ -482,7 +482,7 @@ class ArcherRepositionState_TeamA(State):
         if self.archer.velocity.length() > 0:
             self.archer.velocity.normalize_ip()
             self.archer.velocity *= self.archer.maxSpeed
-        dodge_projectile(self.archer, False, False, False)
+        dodge_projectile(self.archer)
         return None
 
     def check_conditions(self) -> str:
