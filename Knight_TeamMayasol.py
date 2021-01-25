@@ -7,7 +7,7 @@ from Character import *
 from State import *
 from Utils_Mayasol import *
 
-class Knight_TeamA(Character):
+class Knight_TeamMayasol(Character):
 
     def __init__(self, world, image, base, position):
 
@@ -27,10 +27,10 @@ class Knight_TeamA(Character):
         self.melee_cooldown = 2.
         self.enemy_locations = get_enemies_positions_in_lanes(self.world.paths, self)
 
-        seeking_state = KnightStateSeeking_TeamA(self)
-        attacking_state = KnightStateAttacking_TeamA(self)
-        ko_state = KnightStateKO_TeamA(self)
-        fleeing_state = KnightStateFleeing_TeamA(self)
+        seeking_state = KnightStateSeeking_TeamMayasol(self)
+        attacking_state = KnightStateAttacking_TeamMayasol(self)
+        ko_state = KnightStateKO_TeamMayasol(self)
+        fleeing_state = KnightStateFleeing_TeamMayasol(self)
 
         self.brain.add_state(seeking_state)
         self.brain.add_state(attacking_state)
@@ -84,7 +84,7 @@ class Knight_TeamA(Character):
             self.level_up(level_up_stats[choice])
 
 
-class KnightStateSeeking_TeamA(State):
+class KnightStateSeeking_TeamMayasol(State):
 
     def __init__(self, knight):
 
@@ -148,7 +148,7 @@ class KnightStateSeeking_TeamA(State):
             self.knight.move_target.position = self.knight.path_graph.nodes[self.knight.base.target_node_index].position
 
 
-class KnightStateAttacking_TeamA(State):
+class KnightStateAttacking_TeamMayasol(State):
 
     def __init__(self, knight):
 
@@ -240,7 +240,7 @@ class KnightStateAttacking_TeamA(State):
         return None
 
 
-class KnightStateKO_TeamA(State):
+class KnightStateKO_TeamMayasol(State):
 
     def __init__(self, knight):
 
@@ -272,7 +272,7 @@ class KnightStateKO_TeamA(State):
 
         return None
 
-class KnightStateFleeing_TeamA(State):
+class KnightStateFleeing_TeamMayasol(State):
 
     def __init__(self, knight):
 

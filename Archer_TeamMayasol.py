@@ -9,7 +9,7 @@ from Character import *
 from State import *
 from Utils_Mayasol import *
 
-class Archer_TeamA(Character):
+class Archer_TeamMayasol(Character):
     def __init__(self, world, image, projectile_image, base, position):
         Character.__init__(self, world, "archer", image)
 
@@ -31,8 +31,8 @@ class Archer_TeamA(Character):
 
         self.max_lane: Lane = 0
 
-        self.paths: List[Graph] = generate_pathfinding_graphs("more_pathfinding_nodes.txt", self)
-        self.path_graph: Graph = self.paths[0]
+        self.paths: List[Graph] = generate_pathfinding_graphs("pathfinding_mayasol.txt", self)
+        self.path_graph: Graph = self.paths[1]
         self.path: List[Connection] = get_path_to_enemy_base(self, self.path_graph, self.position)
 
         self.on_base_kiting_path: bool = False
@@ -177,7 +177,7 @@ class Archer_TeamA(Character):
         # ]
 
         if self.can_level_up():
-            if self.levels < 1:
+            if self.levels < 2:
                 self.level_up("speed")
             else:
                 self.level_up("ranged cooldown")
@@ -195,7 +195,7 @@ class Archer_TeamA(Character):
 class ArcherStateSeeking_TeamA(State):
     def __init__(self, archer):
         State.__init__(self, "seeking")
-        self.archer: Archer_TeamA = archer
+        self.archer: Archer_TeamMayasol = archer
 
     def do_actions(self) -> None:
         # If using base kiting paths, reset them
@@ -259,7 +259,7 @@ class ArcherStateSeeking_TeamA(State):
                 return "reposition"
 
         # check if opponent is in range
-        nearest_opponent = self.archer.world.get_nearest_opponent(self.archer)
+        nearest_opponent = get_opponent_in_range(self.archer)
         if nearest_opponent is not None:
             opponent_distance = (
                 self.archer.position - nearest_opponent.position
@@ -285,13 +285,9 @@ class ArcherStateSeeking_TeamA(State):
 class ArcherStateAttacking_TeamA(State):
     def __init__(self, archer):
         State.__init__(self, "attacking")
-        self.archer: Archer_TeamA = archer
+        self.archer: Archer_TeamMayasol = archer
 
     def do_actions(self):
-        # TODO : once changed, check surrounding radius by a certain amount
-        # If enemy hp is (one-hit) status, change target to that
-
-        # nearest_opponent = self.archer.world.get_nearest_opponent(self.archer)
         nearest_opponent = get_opponent_in_range(self.archer)
         if nearest_opponent is not None:
             if (self.archer.position - nearest_opponent.position).length() <= self.archer.min_target_distance:
@@ -312,7 +308,7 @@ class ArcherStateAttacking_TeamA(State):
             self.archer.position - self.archer.target.position
         ).length()
 
-        # If the archer is at the end of the ktiing path, move it back towards the base
+        # If the archer is at the end of the kiting path, move it back towards the base
         if (self.archer.on_base_kiting_path and
             self.archer.at_start_of_connection() and
             self.archer.at_node()):
@@ -436,7 +432,7 @@ class ArcherStateAttacking_TeamA(State):
 class ArcherStateFleeing_TeamA(State):
     def __init__(self, archer):
         State.__init__(self, "fleeing")
-        self.archer: Archer_TeamA = archer
+        self.archer: Archer_TeamMayasol = archer
     
     def do_actions(self) -> None:
         if self.archer.on_base_kiting_path:
@@ -476,7 +472,7 @@ class ArcherStateFleeing_TeamA(State):
 class ArcherRepositionState_TeamA(State):
     def __init__(self, archer):
         State.__init__(self, "reposition")
-        self.archer: Archer_TeamA = archer
+        self.archer: Archer_TeamMayasol = archer
     
     def do_actions(self) -> None:
         # otherwise, continue on path
@@ -519,7 +515,7 @@ class ArcherRepositionState_TeamA(State):
 class ArcherStateKO_TeamA(State):
     def __init__(self, archer):
         State.__init__(self, "ko")
-        self.archer: Archer_TeamA = archer
+        self.archer: Archer_TeamMayasol = archer
 
     def do_actions(self) -> None:
         return None

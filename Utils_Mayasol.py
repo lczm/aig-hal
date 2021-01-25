@@ -542,19 +542,41 @@ def get_opponent_in_range(person: Character) -> Character:
         # Get the distance away from the entity
         current_distance: float = (person.position - entity.position).length()
 
-        # If the entity is within attackable range
-        if current_distance <= range:
-            # If the entity is 1 shot away from dying, just select that.
-            if entity.current_hp <= attack_damage:
-                return entity
-            else:
-                if nearest_opponent is None:
-                    nearest_opponent = entity
-                    distance = current_distance
-                else:
-                    if distance > current_distance:
-                        distance = current_distance
-                        nearest_opponent = entity
+        # # If the entity is within attackable range
+        # if current_distance <= range:
+        #     # If the entity is 1 shot away from dying, just select that.
+        #     if entity.current_hp <= attack_damage:
+        #         return entity
+        #     else:
+        #         if nearest_opponent is None:
+        #             nearest_opponent = entity
+        #             distance = current_distance
+        #         else:
+        #             if distance > current_distance:
+        #                 distance = current_distance
+        #                 nearest_opponent = entity
+
+        if nearest_opponent is None:
+            nearest_opponent = entity
+            distance = current_distance
+        else:
+            if distance > current_distance:
+                distance = current_distance
+                nearest_opponent = entity
+
+    # Get the distance between them,
+    # if the distance between them is below a certain threshold
+    # there is no point in switching targets
+    # Given a situation where 
+    # me ------  a
+    #            b
+    # where the distance between a and b is very little
+    # and i am already shooting at one of them, and the distance is
+    # too short to care, there is no point to switch targets
+    if person.target is not None and nearest_opponent is not None:
+        if nearest_opponent.id != person.target.id:
+            if (nearest_opponent.position - person.target.position).length() < 15:
+                return person.target
 
     return nearest_opponent
 

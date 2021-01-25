@@ -9,7 +9,7 @@ from State import *
 from Utils_Mayasol import *
 
 
-class Wizard_TeamA(Character):
+class Wizard_TeamMayasol(Character):
 
     def __init__(self, world, image, projectile_image, base, position, explosion_image=None):
 
@@ -39,12 +39,12 @@ class Wizard_TeamA(Character):
         self.projectile_range: int = 100
         self.projectile_speed: int = 100
 
-        seeking_state: WizardStateSeeking_TeamA = WizardStateSeeking_TeamA(
+        seeking_state: WizardStateSeeking_TeamMayasol = WizardStateSeeking_TeamMayasol(
             self)
-        attacking_state: WizardStateAttacking_TeamA = WizardStateAttacking_TeamA(
+        attacking_state: WizardStateAttacking_TeamMayasol = WizardStateAttacking_TeamMayasol(
             self)
-        ko_state: WizardStateKO_TeamA = WizardStateKO_TeamA(self)
-        fleeing_state: WizardStateFleeing_TeamA = WizardStateFleeing_TeamA(
+        ko_state: WizardStateKO_TeamMayasol = WizardStateKO_TeamMayasol(self)
+        fleeing_state: WizardStateFleeing_TeamMayasol = WizardStateFleeing_TeamMayasol(
             self)
 
         self.brain.add_state(seeking_state)
@@ -196,12 +196,12 @@ class Wizard_TeamA(Character):
             self.level += 1
 
 
-class WizardStateSeeking_TeamA(State):
+class WizardStateSeeking_TeamMayasol(State):
 
     def __init__(self, wizard):
 
         State.__init__(self, "seeking")
-        self.wizard: Wizard_TeamA = wizard
+        self.wizard: Wizard_TeamMayasol = wizard
         # follow knight on startup
         self.wizard.path_graph = self.wizard.find_knight_lane_graph()
         self.wizard.path = get_path_to_enemy_base(
@@ -270,12 +270,12 @@ class WizardStateSeeking_TeamA(State):
             # self.wizard.base.target_node_index].position
 
 
-class WizardStateAttacking_TeamA(State):
+class WizardStateAttacking_TeamMayasol(State):
 
     def __init__(self, wizard):
 
         State.__init__(self, "attacking")
-        self.wizard: Wizard_TeamA = wizard
+        self.wizard: Wizard_TeamMayasol = wizard
 
     def do_actions(self):
 
@@ -350,7 +350,7 @@ class WizardStateAttacking_TeamA(State):
         return None
 
 
-class WizardStateFleeing_TeamA(State):
+class WizardStateFleeing_TeamMayasol(State):
     def __init__(self, wizard):
 
         State.__init__(self, "fleeing")
@@ -389,7 +389,7 @@ class WizardStateFleeing_TeamA(State):
         return None
 
 
-class WizardStateKO_TeamA(State):
+class WizardStateKO_TeamMayasol(State):
 
     def __init__(self, wizard):
 
