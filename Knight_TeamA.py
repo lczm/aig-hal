@@ -22,6 +22,7 @@ class Knight_TeamA(Character):
 
         self.maxSpeed = 80
         self.min_target_distance = 100
+        self.min_defence_distance = 175
         self.melee_damage = 20
         self.melee_cooldown = 2.
         self.enemy_locations = get_enemies_positions_in_lanes(self.world.paths, self)
@@ -39,16 +40,15 @@ class Knight_TeamA(Character):
         self.brain.set_state("seeking")
 
     #check if knight is alone and tanking for nothing
-    def get_nearest_ranged_ally(self):
+    def get_nearest_ranged_ally(self, character):
 
         nearest_ranged_ally = None
-        ranged_units = ["wizard", "archer"]
         distance = 0.
 
         for entity in self.world.entities.values():
             if entity.team_id != self.team_id:
                 continue
-            if entity.name not in ranged_units:
+            if entity.name != character:
                 continue
             if entity.ko:
                 continue
@@ -65,7 +65,7 @@ class Knight_TeamA(Character):
 
     def defend(self):
         for lane in self.enemy_locations:
-            if self.enemy_locations[lane] > 2:
+            if self.enemy_locations[lane] >= 14:
                 return True
 
     def render(self, surface):
@@ -102,14 +102,14 @@ class KnightStateSeeking_TeamA(State):
 
         self.knight.enemy_locations = get_enemies_positions_in_lanes(self.knight.world.paths, self.knight)
 
-    def check_conditions(self):
-
-        if self.knight.base.current_hp < self.knight.base.max_hp * 0.65 and self.knight.defend():
-            return "fleeing"
-
         # heal if knight HP is below 90% when seeking
         if (self.knight.current_hp <= self.knight.max_hp * 0.9):
             self.knight.heal()
+
+    def check_conditions(self):
+
+        if self.knight.defend():
+            return "fleeing"
 
         # check if opponent is in range
         nearest_opponent = self.knight.world.get_nearest_opponent(self.knight)
@@ -156,6 +156,15 @@ class KnightStateAttacking_TeamA(State):
 
         #if collide against its target unit, hit enemy and fall back momentarily (kiting/orb walking)
         if pygame.sprite.collide_rect(self.knight, self.knight.target):
+            #if wizard around me and hp < 60%:
+            #    heal instead of attack
+            if self.knight.current_hp <= self.knight.max_hp * 0.6:
+                nearest_ally = self.knight.get_nearest_ranged_ally("wizard")
+                if nearest_ally is not None:
+                    ally_distance = (self.knight.position - nearest_ally.position).length()
+                    if ally_distance >= self.knight.min_defence_distance:
+                        self.knight.heal()
+
             #self.knight.velocity = Vector2(0, 0)
             self.knight.melee_attack(self.knight.target)
             if self.knight.current_melee_cooldown == self.knight.melee_cooldown:
@@ -177,8 +186,7 @@ class KnightStateAttacking_TeamA(State):
         #if hitting base, keep hitting and dont run
         if self.knight.target.brain.active_state == "base_state":
             return None
-        
-        ### experimental ###
+
         if (self.knight.position - self.knight.move_target.position).length() < 8:
             #continue on path, and track the latest node passed
             if self.current_connection < self.path_length:
@@ -189,23 +197,20 @@ class KnightStateAttacking_TeamA(State):
         if self.knight.world.get(self.knight.target.id) is None or self.knight.target.ko:
             self.knight.target = None
             self.knight.enemy_decoy = None
-            if self.knight.current_hp >= self.knight.max_hp * 0.65:
-                # if HP >= 65%, continue seeking
+            if self.knight.defend() == False:
                 return "seeking"
-            else:
-                #change to fleeing state when hp dips below 65% for testing purposes, 45% for actual game
-                return "fleeing"
+
         # target is chasing another character (for bait/decoy situations) -> ignore the target
         elif self.knight.target.brain.active_state == "attacking" and self.knight.target.target != self.knight:
             self.knight.enemy_decoy = self.knight.target
             return "seeking"
             
         #while attacking, taking some dmg and no ally is around, flee
-        if self.knight.current_hp <= self.knight.max_hp * .66:
-            nearest_ally = self.knight.get_nearest_ranged_ally()
+        if self.knight.current_hp <= self.knight.max_hp * .6:
+            nearest_ally = self.knight.get_nearest_ranged_ally("wizard")
             if nearest_ally is not None:
                 ally_distance = (self.knight.position - nearest_ally.position).length()
-                if ally_distance >= self.knight.min_target_distance:
+                if ally_distance >= self.knight.min_defence_distance:
                     return "fleeing"
             
         return None
@@ -278,33 +283,38 @@ class KnightStateFleeing_TeamA(State):
         self.knight.heal() #heal while fleeing
 
     def check_conditions(self):
-
-        # TO-DO
-        #defend the base when 3 enemy characters are pushing in the same lane and base hp < 65%
-        # if self.knight.base.current_hp < self.knight.base.max_hp * 0.65 and \
-        #   return
         
         #goes back to seeking state if knight has nearby ranged ally
-        nearest_ally = self.knight.get_nearest_ranged_ally()
+        nearest_ally = self.knight.get_nearest_ranged_ally("wizard")
         if nearest_ally is not None:
             ally_distance = (self.knight.position - nearest_ally.position).length()
             if (self.knight.current_hp >= self.knight.max_hp * 0.8 \
             and ally_distance <= self.knight.min_target_distance):
                 return "seeking"
 
-        #switch back to attacking state when there is a nearby enemy and HP > 90%
-        nearest_opponent = self.knight.world.get_nearest_opponent(self.knight)
-        if nearest_opponent is not None:
-            opponent_distance = (self.knight.position - nearest_opponent.position).length()
-            if opponent_distance <= self.knight.min_target_distance and self.knight.current_hp >= self.knight.max_hp * 0.9:
-                    self.knight.target = nearest_opponent
-                    return "attacking"
-        
         if (self.knight.position - self.knight.move_target.position).length() < 8:
-            #continue on path, and track the latest node passed
+            #continue on path
             if self.current_connection < self.path_length:
                 self.knight.move_target.position = self.path[self.current_connection].toNode.position
                 self.current_connection += 1
+
+        #in defense mode
+        if self.knight.defend():
+            if (self.knight.position - self.knight.path_graph.nodes[self.knight.base.spawn_node_index].position).length() < 8:
+                nearest_opponent = self.knight.world.get_nearest_opponent(self.knight)
+                if nearest_opponent is not None:
+                    opponent_distance = (self.knight.position - nearest_opponent.position).length()
+                    if opponent_distance <= self.knight.min_defence_distance:
+                            self.knight.target = nearest_opponent
+                            return "attacking"
+        else:
+            #switch back to attacking state when there is a nearby enemy and HP > 85%
+            nearest_opponent = self.knight.world.get_nearest_opponent(self.knight)
+            if nearest_opponent is not None:
+                opponent_distance = (self.knight.position - nearest_opponent.position).length()
+                if opponent_distance <= self.knight.min_target_distance and self.knight.current_hp >= self.knight.max_hp * 0.85:
+                        self.knight.target = nearest_opponent
+                        return "attacking"
             
         return None
 

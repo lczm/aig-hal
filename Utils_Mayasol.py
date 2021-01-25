@@ -254,7 +254,8 @@ def get_enemies_positions_in_lanes(
         enemy_positions.append(node.id)
 
     for node_id in enemy_positions:
-        enemy_positions_in_lane[get_lane(node_id)] += 1
+        #with character scoring
+        enemy_positions_in_lane[get_lane(node_id)] += get_character_score(entity)
 
     return enemy_positions_in_lane
 
