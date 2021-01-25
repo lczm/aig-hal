@@ -148,20 +148,18 @@ class Archer_TeamMayasol(Character):
     
     def render(self, surface) -> None:
         Character.render(self, surface)
+        # for i in range(0, len(self.path) - 1):
+        #     from_position: Vector2 = self.path[i].fromNode.position
+        #     to_position: Vector2 = self.path[i].toNode.position
 
-        for i in range(0, len(self.path) - 1):
-            from_position: Vector2 = self.path[i].fromNode.position
-            to_position: Vector2 = self.path[i].toNode.position
+        #     draw_circle_at_position(from_position, surface, (0, 255, 0))
+        #     draw_circle_at_position(to_position, surface, (0, 255, 0))
 
-            draw_circle_at_position(from_position, surface, (0, 255, 0))
-            draw_circle_at_position(to_position, surface, (0, 255, 0))
+        # from_position: Vector2 = self.path[self.current_connection].fromNode.position
+        # to_position: Vector2 = self.path[self.current_connection].toNode.position
 
-        from_position: Vector2 = self.path[self.current_connection].fromNode.position
-        to_position: Vector2 = self.path[self.current_connection].toNode.position
-
-        draw_circle_at_position(from_position, surface, (0, 0, 255))
-        draw_circle_at_position(to_position, surface, (255, 0, 0))
-
+        # draw_circle_at_position(from_position, surface, (0, 0, 255))
+        # draw_circle_at_position(to_position, surface, (255, 0, 0))
         return None
 
     def process(self, time_passed) -> None:
@@ -489,7 +487,7 @@ class ArcherRepositionState_TeamA(State):
 
     def check_conditions(self) -> str:
         # If there is an enemy nearby while trying to reposition, just attack the enemy
-        nearest_opponent = self.archer.world.get_nearest_opponent(self.archer)
+        nearest_opponent = get_opponent_in_range(self.archer)
         if nearest_opponent is not None:
             if (self.archer.position - nearest_opponent.position).length() <= self.archer.min_target_distance:
                 self.archer.target = nearest_opponent
