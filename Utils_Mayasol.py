@@ -663,7 +663,7 @@ def draw_circle_at_position(position: Vector2, surface: pygame.Surface,
     return None
 
 
-def dodge_projectile(person: Character, dodge_explosion: bool = True, explosion_dodge_backward: bool = True):
+def dodge_projectile(person: Character, dodge_explosion: bool = True, dodge_into_existing_explosion:bool = True, explosion_dodge_backward: bool = True):
     nearest_projectile: GameEntity = get_nearest_projectile(person)
     if dodge_explosion and nearest_projectile is not None and not nearest_projectile.name == "explosion":
         distance_from_origin: Vector2 = nearest_projectile.position - \
@@ -742,7 +742,7 @@ def dodge_projectile(person: Character, dodge_explosion: bool = True, explosion_
                             person.velocity.normalize_ip()
                             person.velocity *= person.maxSpeed
 
-                    print("undodgeable")
+                    # print("undodgeable")
 
         # explosive projectile
         else:
@@ -845,7 +845,7 @@ def dodge_projectile(person: Character, dodge_explosion: bool = True, explosion_
                             person.velocity = fake_rect_position - person.position
                             person.velocity.normalize_ip()
                             person.velocity *= person.maxSpeed
-    elif nearest_projectile is not None and nearest_projectile.name == "explosion":
+    elif dodge_into_existing_explosion and nearest_projectile is not None and nearest_projectile.name == "explosion":
         point_of_explosion: Vector2 = Vector2(
             nearest_projectile.position.x, nearest_projectile.position.y)
         explosion_rect = nearest_projectile.rect.copy()
