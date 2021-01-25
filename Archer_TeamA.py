@@ -177,7 +177,7 @@ class Archer_TeamA(Character):
         # ]
 
         if self.can_level_up():
-            if self.levels < 1:
+            if self.levels < 2:
                 self.level_up("speed")
             else:
                 self.level_up("ranged cooldown")
@@ -308,7 +308,7 @@ class ArcherStateAttacking_TeamA(State):
             self.archer.position - self.archer.target.position
         ).length()
 
-        # If the archer is at the end of the ktiing path, move it back towards the base
+        # If the archer is at the end of the kiting path, move it back towards the base
         if (self.archer.on_base_kiting_path and
             self.archer.at_start_of_connection() and
             self.archer.at_node()):

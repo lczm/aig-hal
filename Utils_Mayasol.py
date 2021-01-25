@@ -497,19 +497,27 @@ def get_opponent_in_range(person: Character) -> Character:
         # Get the distance away from the entity
         current_distance: float = (person.position - entity.position).length()
 
-        # If the entity is within attackable range
-        if current_distance <= range:
-            # If the entity is 1 shot away from dying, just select that.
-            if entity.current_hp <= attack_damage:
-                return entity
-            else:
-                if nearest_opponent is None:
-                    nearest_opponent = entity
-                    distance = current_distance
-                else:
-                    if distance > current_distance:
-                        distance = current_distance
-                        nearest_opponent = entity
+        # # If the entity is within attackable range
+        # if current_distance <= range:
+        #     # If the entity is 1 shot away from dying, just select that.
+        #     if entity.current_hp <= attack_damage:
+        #         return entity
+        #     else:
+        #         if nearest_opponent is None:
+        #             nearest_opponent = entity
+        #             distance = current_distance
+        #         else:
+        #             if distance > current_distance:
+        #                 distance = current_distance
+        #                 nearest_opponent = entity
+
+        if nearest_opponent is None:
+            nearest_opponent = entity
+            distance = current_distance
+        else:
+            if distance > current_distance:
+                distance = current_distance
+                nearest_opponent = entity
 
     # Get the distance between them,
     # if the distance between them is below a certain threshold
