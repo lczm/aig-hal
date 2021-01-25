@@ -610,6 +610,10 @@ def get_amount_of_enemies_in_range(person: Character, range: float):
 
 def get_amount_of_enemies_in_range_by_score(person: Character, paths: List[Graph], range: float) -> Dict[Lane, int]:
     enemy_positions_in_lane: Dict[Lane, int] = {}
+    
+    # Set every lane to 0 threat
+    for lane in Lane:
+        enemy_positions_in_lane[lane] = 0
 
     entity: Character
     for entity in person.world.entities.values():
@@ -629,7 +633,7 @@ def get_amount_of_enemies_in_range_by_score(person: Character, paths: List[Graph
         # Get the distance away from the entity
         current_distance: float = (person.position - entity.position).length()
         if current_distance <= range:
-            enemy_lane: Lane = get_lane(get_nearest_node_global(paths))
+            enemy_lane: Lane = get_lane(get_nearest_node_global(paths, entity.position))
             enemy_positions_in_lane[enemy_lane] += get_character_score(entity)
 
     return enemy_positions_in_lane

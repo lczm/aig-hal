@@ -29,7 +29,7 @@ class Knight_TeamMayasol(Character):
         self.min_defence_distance = 250
         self.melee_damage = 20
         self.melee_cooldown = 2.
-        self.enemy_locations = get_enemies_positions_in_lanes(self.world.paths, self)
+        self.enemy_locations = get_amount_of_enemies_in_range_by_score(self.base, 400.0)
 
         seeking_state = KnightStateSeeking_TeamMayasol(self)
         attacking_state = KnightStateAttacking_TeamMayasol(self)
@@ -95,7 +95,6 @@ class KnightStateSeeking_TeamMayasol(State):
         State.__init__(self, "seeking")
         self.knight = knight
 
-        #picks 1/4 path at random
         self.knight.path_graph = self.knight.world.paths[1]
 
     def do_actions(self):
@@ -105,7 +104,7 @@ class KnightStateSeeking_TeamMayasol(State):
             self.knight.velocity.normalize_ip()
             self.knight.velocity *= self.knight.maxSpeed
 
-        self.knight.enemy_locations = lane_threat(self.knight.world.paths, self.knight)
+        self.knight.enemy_locations = get_amount_of_enemies_in_range_by_score(self.knight.base, 400.0)
 
         # heal if knight HP is below 90% when seeking
         if (self.knight.current_hp <= self.knight.max_hp * 0.9):
@@ -156,7 +155,7 @@ class KnightStateAttacking_TeamMayasol(State):
 
     def do_actions(self):
 
-        self.knight.enemy_locations = lane_threat(self.knight.world.paths, self.knight)
+        self.knight.enemy_locations = get_amount_of_enemies_in_range_by_score(self.knight.base, 400.0)
 
         #if collide against its target unit, hit enemy and fall back momentarily (kiting/orb walking)
         if pygame.sprite.collide_rect(self.knight, self.knight.target):
@@ -194,7 +193,7 @@ class KnightStateAttacking_TeamMayasol(State):
                 self.current_connection += 1
 
         #if hitting base, keep hitting and dont run
-        if self.knight.target.brain.active_state == "base_state":
+        if self.knight.target.__class__.__name__ == "base":
             return None
 
 
@@ -221,7 +220,7 @@ class KnightStateAttacking_TeamMayasol(State):
         return None
 
     def entry_actions(self):
-        
+
         self.knight.path = get_path_to_my_base(self.knight, self.knight.path_graph, self.knight.position)
         self.path_length = len(self.knight.path)
         self.current_connection = 0
@@ -275,7 +274,7 @@ class KnightStateFleeing_TeamMayasol(State):
 
     def do_actions(self):
         
-        self.knight.enemy_locations = lane_threat(self.knight.world.paths, self.knight)
+        self.knight.enemy_locations = get_amount_of_enemies_in_range_by_score(self.knight.base, 400.0)
 
         # move to targeted position
         self.knight.velocity = self.knight.move_target.position - self.knight.position
