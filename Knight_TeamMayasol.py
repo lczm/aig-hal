@@ -70,8 +70,10 @@ class Knight_TeamMayasol(Character):
     def defend(self):
         for lane in self.enemy_locations:
             # knight(4) + archer(4) + wizard(6)
-            if self.enemy_locations[lane] >= 14:
+            if self.enemy_locations[lane] >= 5:
                 return True
+        
+        return False
 
     def render(self, surface):
 

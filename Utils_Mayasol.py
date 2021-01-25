@@ -618,19 +618,12 @@ def get_amount_of_enemies_in_range(person: Character, range: float):
     return amount
 
 
-def get_amount_of_enemies_in_range_by_score(person: Character, range: float) -> Dict[Lane, int]:
-
+def get_amount_of_enemies_in_range_by_score(person: Character, paths: List[Graph], range: float) -> Dict[Lane, int]:
     enemy_positions_in_lane: Dict[Lane, int] = {}
 
     # Set every lane to 0 threat
     for lane in Lane:
         enemy_positions_in_lane[lane] = 0
-
-    paths: List[Graph]
-    if hasattr(person, "paths"):
-        paths = person.paths
-    else:
-        paths = person.world.paths
 
     entity: Character
     for entity in person.world.entities.values():
@@ -671,6 +664,27 @@ def get_current_connection_at_position_to_node(person: Character) -> int:
             return i
 
     return 0
+
+
+def get_paths_if_exists(person: Character) -> List[Graph]:
+    if hasattr(person, "paths"):
+        return person.paths
+    else:
+        return person.world.paths
+
+
+def is_person_on_lane_with_person_within_range(person: Character, person_search: Character, range: float) -> bool:
+    person_node: Node = get_nearest_node_global_ignoring_base(get_paths_if_exists(person), person.position)
+    person_search_node: Node = get_nearest_node_global_ignoring_base(get_paths_if_exists(person_search), person_search.position)
+
+    person_lane: Lane = get_lane(person_node.id)
+    person_search_lane: Lane = get_lane(person_search_node.id)
+
+    distance: float = (person.position - person_search.position).length()
+
+    if distance <= range and person_lane == person_search_lane:
+        return True
+    return False
 
 
 # Debug function to see where the character is going from/to
