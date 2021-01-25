@@ -65,6 +65,7 @@ class Knight_TeamA(Character):
 
     def defend(self):
         for lane in self.enemy_locations:
+            # knight(4) + archer(4) + wizard(6)
             if self.enemy_locations[lane] >= 14:
                 return True
 
@@ -129,6 +130,8 @@ class KnightStateSeeking_TeamA(State):
 
 
     def entry_actions(self):
+        self.knight.target = None
+
         #node-to-node pathfinding
         self.path = get_path_to_enemy_base(self.knight, self.knight.path_graph, self.knight.position)
 
@@ -162,7 +165,7 @@ class KnightStateAttacking_TeamA(State):
                 nearest_ally = self.knight.get_nearest_ranged_ally("wizard")
                 if nearest_ally is not None:
                     ally_distance = (self.knight.position - nearest_ally.position).length()
-                    if ally_distance >= self.knight.min_defence_distance:
+                    if ally_distance <= self.knight.min_defence_distance:
                         self.knight.heal()
 
             #self.knight.velocity = Vector2(0, 0)
@@ -195,9 +198,9 @@ class KnightStateAttacking_TeamA(State):
 
         # target is gone
         if self.knight.world.get(self.knight.target.id) is None or self.knight.target.ko:
-            self.knight.target = None
-            self.knight.enemy_decoy = None
-            if self.knight.defend() == False:
+            if self.knight.defend() == True:
+                return "fleeing"
+            else:
                 return "seeking"
 
         # target is chasing another character (for bait/decoy situations) -> ignore the target
@@ -319,6 +322,10 @@ class KnightStateFleeing_TeamA(State):
         return None
 
     def entry_actions(self):
+
+        self.knight.target = None
+        self.knight.enemy_decoy = None
+
         # generate path upon fleeing
         self.path = get_path_to_my_base(self.knight, self.knight.path_graph, self.knight.position)
 
