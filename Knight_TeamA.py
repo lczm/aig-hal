@@ -157,6 +157,8 @@ class KnightStateAttacking_TeamA(State):
 
     def do_actions(self):
 
+        self.knight.enemy_locations = lane_threat(self.knight.world.paths, self.knight)
+
         #if collide against its target unit, hit enemy and fall back momentarily (kiting/orb walking)
         if pygame.sprite.collide_rect(self.knight, self.knight.target):
             #if wizard around me and hp < 60%:
@@ -191,7 +193,7 @@ class KnightStateAttacking_TeamA(State):
             if self.current_connection < self.path_length:
                 self.knight.move_target.position = self.path[self.current_connection].toNode.position
                 self.current_connection += 1
-                
+
         #if hitting base, keep hitting and dont run
         if self.knight.target.brain.active_state == "base_state":
             return None
@@ -256,7 +258,7 @@ class KnightStateKO_TeamA(State):
         if self.knight.current_respawn_time <= 0:
             self.knight.current_respawn_time = self.knight.respawn_time
             self.knight.ko = False
-            self.knight.path_graph = self.knight.world.paths[randint(0, len(self.knight.world.paths)-1)]
+            self.knight.path_graph = self.knight.world.paths[1]
             return "seeking"
             
         return None
@@ -278,6 +280,9 @@ class KnightStateFleeing_TeamA(State):
         self.knight = knight
 
     def do_actions(self):
+        
+        self.knight.enemy_locations = lane_threat(self.knight.world.paths, self.knight)
+
         # move to targeted position
         self.knight.velocity = self.knight.move_target.position - self.knight.position
         if self.knight.velocity.length() > 0:
