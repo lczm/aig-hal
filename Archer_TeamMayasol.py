@@ -385,13 +385,13 @@ class ArcherStateAttacking_TeamMayasol(State):
         else:
             # if within the range of the opponent, run
             if self.archer.min_target_distance > opponent_distance:
-                # self.archer.set_move_target_from_node()
+                self.archer.set_move_target_from_node()
 
                 if self.archer.connection_not_at_start() and self.archer.at_node(): 
                     self.archer.decrement_connection()
                 self.archer.set_move_target_from_node()
             else:
-                # self.archer.set_move_target_to_node()
+                self.archer.set_move_target_to_node()
 
                 if self.archer.connection_not_at_start() and self.archer.at_node(): 
                     # self.archer.decrement_connection()
