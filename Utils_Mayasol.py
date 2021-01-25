@@ -307,7 +307,7 @@ def get_enemies_positions_in_lanes(
 
     for node_id in enemy_positions:
         #with character scoring
-        enemy_positions_in_lane[get_lane(node_id)] += get_character_score(entity)
+        enemy_positions_in_lane[get_lane(node_id)] += 1
 
     return enemy_positions_in_lane
 
@@ -365,6 +365,50 @@ def get_relative_lane_threat(
             enemy_positions_in_lane[lane]
 
     return relative_threat
+
+def lane_threat(
+    paths: List[Graph], person: Character
+) -> Dict[Lane, int]:
+    enemy_positions_in_lane: Dict[Lane, int] = {}
+
+    # Set every lane to 0 threat
+    for lane in Lane:
+        enemy_positions_in_lane[lane] = 0
+
+    entity: Character
+    for entity in person.world.entities.values():
+        # neutral entity
+        if entity.team_id == 2:
+            continue
+        # projectiles and explosions can be ignored
+        if entity.name == "projectile" or entity.name == "explosion":
+            continue
+        # ko-ed can be ignored
+        if entity.ko:
+            continue
+        # bases and towers can be ignored
+        if entity.name == "base" or entity.name == "tower":
+            continue
+
+        # Dont count 'myself' into the calculations
+        if entity.id == person.id:
+            continue
+
+        # there is an entity, it is either my team or the opponent's
+        # get closest node for this entity
+        node: Node = get_nearest_node_global_ignoring_base(
+            paths, entity.position)
+        lane: Lane = get_lane(node.id)
+
+        # If entity is at lane, ignore
+        if lane == Lane.Base:
+            continue
+
+        # enemy team
+        if entity.team_id == 1 - person.team_id:
+            enemy_positions_in_lane[lane] += get_character_score(entity)
+
+    return enemy_positions_in_lane
 
 
 def get_highest_lane_threat(
