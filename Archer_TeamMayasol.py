@@ -9,7 +9,7 @@ from Character import *
 from State import *
 from Utils_Mayasol import *
 
-class Archer_TeamA(Character):
+class Archer_TeamMayasol(Character):
     def __init__(self, world, image, projectile_image, base, position):
         Character.__init__(self, world, "archer", image)
 
@@ -195,7 +195,7 @@ class Archer_TeamA(Character):
 class ArcherStateSeeking_TeamA(State):
     def __init__(self, archer):
         State.__init__(self, "seeking")
-        self.archer: Archer_TeamA = archer
+        self.archer: Archer_TeamMayasol = archer
 
     def do_actions(self) -> None:
         # If using base kiting paths, reset them
@@ -285,7 +285,7 @@ class ArcherStateSeeking_TeamA(State):
 class ArcherStateAttacking_TeamA(State):
     def __init__(self, archer):
         State.__init__(self, "attacking")
-        self.archer: Archer_TeamA = archer
+        self.archer: Archer_TeamMayasol = archer
 
     def do_actions(self):
         nearest_opponent = get_opponent_in_range(self.archer)
@@ -432,7 +432,7 @@ class ArcherStateAttacking_TeamA(State):
 class ArcherStateFleeing_TeamA(State):
     def __init__(self, archer):
         State.__init__(self, "fleeing")
-        self.archer: Archer_TeamA = archer
+        self.archer: Archer_TeamMayasol = archer
     
     def do_actions(self) -> None:
         if self.archer.on_base_kiting_path:
@@ -472,7 +472,7 @@ class ArcherStateFleeing_TeamA(State):
 class ArcherRepositionState_TeamA(State):
     def __init__(self, archer):
         State.__init__(self, "reposition")
-        self.archer: Archer_TeamA = archer
+        self.archer: Archer_TeamMayasol = archer
     
     def do_actions(self) -> None:
         # otherwise, continue on path
@@ -515,7 +515,7 @@ class ArcherRepositionState_TeamA(State):
 class ArcherStateKO_TeamA(State):
     def __init__(self, archer):
         State.__init__(self, "ko")
-        self.archer: Archer_TeamA = archer
+        self.archer: Archer_TeamMayasol = archer
 
     def do_actions(self) -> None:
         return None
