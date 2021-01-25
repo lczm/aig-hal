@@ -11,11 +11,13 @@ BOT_PATH = 1
 MID_TOP_PATH = 2
 MID_BOT_PATH = 3
 
-MAIN_CHARACTER_SCORE: int = 4
+KNIGHT_SCORE: int = 4
+ARCHER_SCORE: int = 4
+WIZARD_SCORE: int = 6
 CHARACTER_SCORING: Dict[str, int] = {
-    "knight": MAIN_CHARACTER_SCORE,
-    "archer": MAIN_CHARACTER_SCORE,
-    "wizard": MAIN_CHARACTER_SCORE,
+    "knight": KNIGHT_SCORE,
+    "archer": ARCHER_SCORE,
+    "wizard": WIZARD_SCORE,
     "orc": 1,
 }
 
@@ -86,9 +88,9 @@ def get_graph(person: Character, graph: Graph, lane: Lane) -> Graph:
 
 
 def get_top_graph(person: Character) -> Graph:
-    if hasattr(person, "paths"): 
+    if hasattr(person, "paths"):
         return person.paths[TOP_PATH]
-    else: 
+    else:
         return person.world.paths[TOP_PATH]
 
 
@@ -126,6 +128,7 @@ def get_path_to_enemy_base(person: Character, path_graph: Graph, position: Vecto
         get_node_from_id(paths, person.base.target_node_index)
     )
 
+
 def get_path_to_enemy_base_from_my_base(person: Character, path_graph: Graph) -> List[Connection]:
     paths: List[Graph]
     if hasattr(person, "paths"):
@@ -139,12 +142,34 @@ def get_path_to_enemy_base_from_my_base(person: Character, path_graph: Graph) ->
         get_node_from_id(paths, person.base.target_node_index)
     )
 
+
 def get_path_to_my_base(person: Character, path_graph: Graph, position: Vector2) -> List[Connection]:
+    paths: List[Graph]
+    if hasattr(person, "paths"):
+        paths = person.paths
+    else:
+        paths = person.world.paths
+
     return pathFindAStar(
         path_graph,
         path_graph.get_nearest_node(position),
-        get_node_from_id(person.world.paths, person.base.spawn_node_index)
+        get_node_from_id(paths, person.base.spawn_node_index)
     )
+
+
+def get_path_from_base_to_position(person: Character, path_graph: Graph) -> List[Connection]:
+    paths: List[Graph]
+    if hasattr(person, "paths"):
+        paths = person.paths
+    else:
+        paths = person.world.paths
+
+    return pathFindAStar(
+        path_graph,
+        get_initial_start_node(person),
+        get_nearest_node_global_ignoring_base(paths, person.position)
+    )
+
 
 # def get_path_to_my_base(person: Character, path_graph: Graph, position: Vector2) -> List[NodeRecord]:
 #     return pathFindAStar(
@@ -171,7 +196,7 @@ def get_nearest_node_local(graph: Graph, position: Vector2) -> Node:
 # The reason why this is needed is because the get_nearest_node() implemented
 # is a method, not a function, and it cannot be used without states
 def get_nearest_node_global(paths: List[Graph], position: Vector2) -> Node:
-    nearest = None
+    nearest: Node = None
     nearest_distance = inf
 
     # Typehints
@@ -185,24 +210,37 @@ def get_nearest_node_global(paths: List[Graph], position: Vector2) -> Node:
                 nearest = node
     return nearest
 
+
+def get_nearest_node_global_ignoring_base(paths: List[Graph], position: Vector2) -> Node:
+    nearest: Node = None
+    nearest_distance: float = inf
+
+    graph: Graph
+    node: Node
+    for graph in paths:
+        for node in graph.nodes.values():
+            if get_lane(node.id) == Lane.Base:
+                continue
+            distance = (position - Vector2(node.position)).length()
+            if distance < nearest_distance:
+                nearest_distance = distance
+                nearest = node
+
+    return nearest
+
+
 # just get nearest opponent but projectile
-
-
 def get_nearest_projectile(person: Character) -> GameEntity:
 
     nearest_projectile = None
     distance = 0.
 
     for entity in person.world.entities.values():
-        # neutral entity
-        if entity.team_id == 2:
-            continue
-
         # same team
         if entity.team_id == person.team_id:
             continue
 
-        if entity.name != "projectile":
+        if entity.name != "projectile" and entity.name != "explosion":
             continue
 
         if nearest_projectile is None:
@@ -214,6 +252,20 @@ def get_nearest_projectile(person: Character) -> GameEntity:
                 nearest_projectile = entity
 
     return nearest_projectile
+
+
+def check_for_obstacles(rect: Rect, obstacle_list: List) -> bool:
+    for obstacle in obstacle_list:
+        if rect.colliderect(obstacle.rect):
+            return True
+    return False
+
+
+def check_screen_edge(position: Vector2) -> bool:
+    if position[0] < 0 or position[0] > SCREEN_WIDTH or \
+            position[1] < 0 or position[1] > SCREEN_HEIGHT:
+        return True
+    return False
 
 
 # returns {int1: int2}
@@ -286,9 +338,14 @@ def get_relative_lane_threat(
         if entity.name == "base" or entity.name == "tower":
             continue
 
+        # Dont count 'myself' into the calculations
+        if entity.id == person.id:
+            continue
+
         # there is an entity, it is either my team or the opponent's
         # get closest node for this entity
-        node: Node = get_nearest_node_global(paths, entity.position)
+        node: Node = get_nearest_node_global_ignoring_base(
+            paths, entity.position)
         lane: Lane = get_lane(node.id)
 
         # If entity is at lane, ignore
@@ -398,7 +455,7 @@ def generate_series_of_connections(person: Character, node_ids: List[int]) -> Li
         path_graph = person.path_graph
     else:
         path_graph = person.world.path_graph
-    
+
     if hasattr(person, "paths"):
         paths = person.paths
     else:
@@ -437,7 +494,7 @@ def get_opponent_in_range(person: Character) -> Character:
         # dead
         if entity.ko:
             continue
-        
+
         # Get the distance away from the entity
         current_distance: float = (person.position - entity.position).length()
 
@@ -458,8 +515,247 @@ def get_opponent_in_range(person: Character) -> Character:
     return nearest_opponent
 
 
+def get_amount_of_enemies_in_range(person: Character, range: float):
+    amount: int = 0
+
+    entity: Character
+    for entity in person.world.entities.values():
+        # neutral entity
+        if entity.team_id == 2:
+            continue
+        # same team
+        if entity.team_id == person.team_id:
+            continue
+        # projectile or explosion
+        if entity.name == "projectile" or entity.name == "explosion":
+            continue
+        # dead
+        if entity.ko:
+            continue
+
+        # Get the distance away from the entity
+        current_distance: float = (person.position - entity.position).length()
+        if current_distance <= range:
+            amount += 1
+
+    return amount
+
+
+def get_current_connection_at_position_to_node(person: Character) -> int:
+    paths: List[Graph]
+    if hasattr(person, "paths"):
+        paths = person.paths
+    else:
+        paths = person.world.paths
+
+    nearest_node = get_nearest_node_global(paths, person.position)
+
+    for i in range(len(person.path)):
+        if person.path[i].toNode.id == nearest_node.id:
+            return i
+
+    return 0
+
+
 # Debug function to see where the character is going from/to
 def draw_circle_at_position(position: Vector2, surface: pygame.Surface,
                             color: Tuple[int] = (255, 0, 0)) -> None:
     pygame.draw.circle(surface, color, position, 15)
     return None
+
+
+def dodge_projectile(person: Character, explosion_dodge_backward: bool = True):
+    nearest_projectile: GameEntity = get_nearest_projectile(person)
+    if nearest_projectile is not None and not nearest_projectile.name == "explosion":
+        distance_from_origin: Vector2 = nearest_projectile.position - \
+            nearest_projectile.origin_position
+        distance_until_despawn: float = nearest_projectile.max_range - \
+            distance_from_origin.length()
+        original_velocity: Vector2 = nearest_projectile.velocity / nearest_projectile.maxSpeed
+        # normal projectile
+        if not nearest_projectile.explosive_image:
+            # +2 to account for error when converting float to int
+            for i in range(int(distance_until_despawn + 2)):
+                projectile_rect: Rect = nearest_projectile.rect.copy()
+                w, h = nearest_projectile.image.get_size()
+                projectile_rect.x = nearest_projectile.position.x + \
+                    (original_velocity.x * i) - w/2
+                projectile_rect.y = nearest_projectile.position.y + \
+                    (original_velocity.y * i) - h/2
+                if (projectile_rect.colliderect(person.rect)):
+                    person.projectile_rect = projectile_rect
+                    distance_until_collide: float = nearest_projectile.position.length(
+                    ) - Vector2(projectile_rect.x, projectile_rect.y).length()
+                    # rotate velocity 90 degree clockwise from projectile
+                    projectile_velocity = Vector2(
+                        nearest_projectile.velocity.x, nearest_projectile.velocity.y)
+                    y_velocity = projectile_velocity.y
+                    projectile_velocity.x *= -1
+                    projectile_velocity.y = projectile_velocity.x
+                    projectile_velocity.x = y_velocity
+                    fake_velocity = Vector2(
+                        projectile_velocity.x, projectile_velocity.y)
+                    fake_rect = person.rect.copy()
+                    w, h = person.image.get_size()
+                    character_original_velocity = fake_velocity / person.maxSpeed
+
+                    for j in range(int(distance_until_collide)):
+                        fake_rect.x = person.position.x + \
+                            (character_original_velocity.x * j) - w/2
+                        fake_rect.y = person.position.y + \
+                            (character_original_velocity.y * j) - h/2
+                        fake_rect_position = Vector2(
+                            fake_rect.x, fake_rect.y)
+                        # if possible to dodge
+                        if not (projectile_rect.colliderect(fake_rect)) \
+                                and not check_for_obstacles(fake_rect, person.world.obstacles) \
+                                and not check_screen_edge(fake_rect_position):
+                            # dodge 90 degree clockwise from the projectile
+                            person.velocity = fake_rect_position - person.position
+                            person.velocity.normalize_ip()
+                            person.velocity *= person.maxSpeed
+                            return
+
+                    # if code reaches here means cant dodge 90 degree clockwise
+                    projectile_velocity = Vector2(
+                        nearest_projectile.velocity.x, nearest_projectile.velocity.y)
+                    x_velocity = projectile_velocity.x
+                    projectile_velocity.y *= -1
+                    projectile_velocity.x = projectile_velocity.y
+                    projectile_velocity.y = x_velocity
+                    fake_velocity = Vector2(
+                        projectile_velocity.x, projectile_velocity.y)
+                    fake_rect = person.rect.copy()
+                    character_original_velocity = fake_velocity / person.maxSpeed
+                    for k in range(int(distance_until_collide)):
+                        fake_rect.x = person.position.x + \
+                            (character_original_velocity.x * k) - w/2
+                        fake_rect.y = person.position.y + \
+                            (character_original_velocity.y * k) - h/2
+                        fake_rect_position = Vector2(
+                            fake_rect.x, fake_rect.y)
+                        # if possible to dodge
+                        if not (projectile_rect.colliderect(fake_rect)) \
+                                and not check_for_obstacles(fake_rect, person.world.obstacles) \
+                                and not check_screen_edge(fake_rect_position):
+                            # dodge 90 degree counterclockwise from the projectile
+                            person.velocity = fake_rect_position - person.position
+                            person.velocity.normalize_ip()
+                            person.velocity *= person.maxSpeed
+                            return
+
+                    print("undodgeable")
+
+        # explosive projectile
+        else:
+            point_of_explosion: Vector2 = nearest_projectile.position + \
+                (original_velocity
+                    * distance_until_despawn)
+            # create a explosion object that isnt in the game so that i can see if it collides with the character
+            explosion = Explosion(nearest_projectile.owner, nearest_projectile.owner.world, nearest_projectile.explosive_image,
+                                  1000, point_of_explosion, nearest_projectile.owner.team_id)
+            # set the x and y coordinate of the explosion (for some reason doesnt set it automatically)
+            w, h = explosion.image.get_size()
+            explosion.rect.x = point_of_explosion.x - w/2
+            explosion.rect.y = point_of_explosion.y - h/2
+            collide_list = pygame.sprite.spritecollide(
+                explosion, person.world.entities.values(), False)
+            explosion_position = Vector2(
+                explosion.rect.x, explosion.rect.y)
+            distance_until_explode = point_of_explosion.length() - explosion_position.length()
+            if person in collide_list:
+                projectile_velocity = Vector2(
+                    nearest_projectile.velocity.x, nearest_projectile.velocity.y)
+                y_velocity = projectile_velocity.y
+                projectile_velocity.x *= -1
+                projectile_velocity.y = projectile_velocity.x
+                projectile_velocity.x = y_velocity
+                fake_velocity = Vector2(
+                    projectile_velocity.x, projectile_velocity.y)
+                fake_rect = person.rect.copy()
+                w, h = person.image.get_size()
+                character_original_velocity = fake_velocity / person.maxSpeed
+                for i in range(int(distance_until_explode)):
+                    fake_rect.x = person.position.x + \
+                        (character_original_velocity.x * i) - w/2
+                    fake_rect.y = person.position.y + \
+                        (character_original_velocity.y * i) - h/2
+                    fake_rect_position = Vector2(
+                        fake_rect.x, fake_rect.y)
+                    # if possible to dodge
+                    if not (explosion.rect.colliderect(fake_rect)) \
+                            and not check_for_obstacles(fake_rect, person.world.obstacles) \
+                            and not check_screen_edge(fake_rect_position):
+                        # dodge 90 degree clockwise from the projectile
+                        #person.velocity.x *= -1
+                        #person.velocity.y = person.velocity.x
+                        #person.velocity.x = y_velocity
+                        person.velocity = fake_rect_position - person.position
+                        person.velocity.normalize_ip()
+                        person.velocity *= person.maxSpeed
+                        return
+                projectile_velocity = Vector2(
+                    nearest_projectile.velocity.x, nearest_projectile.velocity.y)
+                x_velocity = projectile_velocity.x
+                projectile_velocity.y *= -1
+                projectile_velocity.x = projectile_velocity.y
+                projectile_velocity.y = x_velocity
+                fake_velocity = Vector2(
+                    projectile_velocity.x, projectile_velocity.y)
+                fake_rect = person.rect.copy()
+                character_original_velocity = fake_velocity / person.maxSpeed
+                for j in range(int(distance_until_explode)):
+                    fake_rect.x = person.position.x + \
+                        (character_original_velocity.x * j) - w/2
+                    fake_rect.y = person.position.y + \
+                        (character_original_velocity.y * j) - h/2
+                    fake_rect_position = Vector2(
+                        fake_rect.x, fake_rect.y)
+                    # if possible to dodge
+                    if not (explosion.rect.colliderect(fake_rect)) \
+                            and not check_for_obstacles(fake_rect, person.world.obstacles) \
+                            and not check_screen_edge(fake_rect_position):
+                        # dodge 90 degree clockwise from the projectile
+                        #person.velocity.x *= -1
+                        #person.velocity.y = person.velocity.x
+                        #person.velocity.x = y_velocity
+                        person.velocity = fake_rect_position - person.position
+                        person.velocity.normalize_ip()
+                        person.velocity *= person.maxSpeed
+                        return
+                if (explosion_dodge_backward):
+                    projectile_velocity = Vector2(
+                        nearest_projectile.velocity.x, nearest_projectile.velocity.y)
+                    x_velocity = projectile_velocity.x
+                    fake_velocity = Vector2(
+                        projectile_velocity.x, projectile_velocity.y)
+                    fake_rect = person.rect.copy()
+                    character_original_velocity = fake_velocity / person.maxSpeed
+                    for k in range(int(distance_until_explode)):
+                        fake_rect.x = person.position.x + \
+                            (character_original_velocity.x * k) - w/2
+                        fake_rect.y = person.position.y + \
+                            (character_original_velocity.y * k) - h/2
+                        fake_rect_position = Vector2(
+                            fake_rect.x, fake_rect.y)
+                        # if possible to dodge
+                        if not (explosion.rect.colliderect(fake_rect)) \
+                                and not check_for_obstacles(fake_rect, person.world.obstacles) \
+                                and not check_screen_edge(fake_rect_position):
+                            # dodge 90 degree clockwise from the projectile
+                            #person.velocity.x *= -1
+                            #person.velocity.y = person.velocity.x
+                            #person.velocity.x = y_velocity
+                            person.velocity = fake_rect_position - person.position
+                            person.velocity.normalize_ip()
+                            person.velocity *= person.maxSpeed
+                            return
+    # elif nearest_projectile is not None and nearest_projectile.name == "explosion":
+    #     point_of_explosion: Vector2 = Vector2(
+    #         nearest_projectile.position.x, nearest_projectile.position.y)
+    #     explosion_rect = nearest_projectile.rect.copy()
+    #     predicted_character_rect = person.rect.copy()
+    #     predicted_character_rect.x += person.velocity.x * person.time_passed
+    #     predicted_character_rect.y += person.velocity.y * person.time_passed
+    #     if (explosion_rect.colliderect(predicted_character_rect)):
+    #         person.velocity = -person.velocity

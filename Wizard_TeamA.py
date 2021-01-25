@@ -174,24 +174,8 @@ class Wizard_TeamA(Character):
             return get_graph(entity, entity.path_graph, knight_lane)
 
         print("using random graph")
-        # return a random graph if there is no knight
-        return self.world.paths[randint(0, len(self.world.paths) - 1)]
-
-    def dodge_projectile(self):
-        nearest_projectile: GameEntity = get_nearest_projectile(self)
-        if nearest_projectile is not None:
-            distance_from_origin: Vector2 = nearest_projectile.position - \
-                nearest_projectile.origin_position
-            distance_until_despawn: float = nearest_projectile.max_range - \
-                distance_from_origin.length()
-            # normal projectile
-            if not nearest_projectile.explosive_image:
-                return
-            # explosive projectile
-            else:
-                point_of_explosion: Vector2 = nearest_projectile.position + \
-                    (nearest_projectile.velocity * distance_until_despawn)
-                return
+        # go bot if no knight
+        return self.world.paths[2]
 
     def render(self, surface):
 
@@ -205,10 +189,9 @@ class Wizard_TeamA(Character):
         level_up_stats: typing.List[str] = [
             "hp", "speed", "ranged damage", "ranged cooldown", "projectile range"]
         if self.can_level_up():
-            if (self.level < 2):
+            if (self.level < 1):
                 self.level_up("speed")
             else:
-                # TODO: check if ranged damange > ranged cooldown
                 self.level_up("ranged damage")
             self.level += 1
 
@@ -230,6 +213,7 @@ class WizardStateSeeking_TeamA(State):
         if self.wizard.velocity.length() > 0:
             self.wizard.velocity.normalize_ip()
             self.wizard.velocity *= self.wizard.maxSpeed
+        dodge_projectile(self.wizard)
 
     def check_conditions(self):
         if (self.wizard.current_hp < (self.wizard.max_hp / 100 * 50) and
@@ -337,7 +321,6 @@ class WizardStateAttacking_TeamA(State):
                 self.wizard.set_move_target_to_node()
 
             # dodge projectiles
-            self.wizard.dodge_projectile()
            # nearest_projectile = get_nearest_projectile(self.wizard)
            # if nearest_projectile is not None:
            #     projectile_distance = (self.wizard.position -
@@ -348,6 +331,8 @@ class WizardStateAttacking_TeamA(State):
         if self.wizard.velocity.length() > 0:
             self.wizard.velocity.normalize_ip()
             self.wizard.velocity *= self.wizard.maxSpeed
+
+        dodge_projectile(self.wizard)
 
     def check_conditions(self):
         if (self.wizard.current_hp < (self.wizard.max_hp / 100 * 50) and
