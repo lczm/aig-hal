@@ -399,6 +399,13 @@ class WizardStateAttacking_TeamMayasol(State):
             self.wizard.current_connection = len(self.wizard.path) - 1
             return "defending"
 
+        # if the opponent is too far
+        opponent_distance = (
+            self.wizard.position - self.wizard.target.position
+        ).length()
+        if opponent_distance > 200:
+            return "seeking"
+
         if self.wizard.world.get(self.wizard.target.id) is None or self.wizard.target.ko:
             self.wizard.target = None
             return "seeking"
